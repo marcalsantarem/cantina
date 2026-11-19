@@ -169,6 +169,9 @@ jobs:
           echo "Publicado: $SITE_URL"
           # Anotações aparecem no resumo do run sem login: URLs reais devolvidas pelo Netlify.
           grep -oE 'https://[a-zA-Z0-9.-]+\.netlify\.app[^ ]*' deploy.log | sort -u | while read -r u; do echo "::notice title=Netlify::$u"; done
+          # Diagnóstico temporário: saída do netlify-cli (sem cores) numa anotação só.
+          log="$(sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g' deploy.log | grep -v '^\s*$' | tail -40 | sed ':a;N;$!ba;s/\n/%0A/g')"
+          echo "::notice title=netlify-cli::$log"
           ls build/web | head -20 | tr '\n' ' ' | sed 's/^/::notice title=Arquivos::/'; echo
 
   # Só em tag: anexa o build (zip) a uma GitHub Release com o nome da tag (com ou sem deploy no Netlify).
