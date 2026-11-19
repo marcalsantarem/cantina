@@ -1,0 +1,18 @@
+# Netlify: o jogo web é publicado pelo GitHub Actions (build/web, deploy com --no-build). Sem funções.
+# Arquivos do Godot não têm hash no nome: nada de cache imutável. index.* (html, js, wasm, pck,
+# manifesto e service worker do PWA) revalida sempre (ETag) para nunca misturar versões.
+[[headers]]
+  for = "/index.*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

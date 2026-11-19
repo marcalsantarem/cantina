@@ -1,0 +1,21 @@
+# Godot
+.godot/
+*.import.tmp
+export_credentials.cfg
+
+# Builds
+build/
+.ci/
+
+# Pacote original do KayKit (fora do git; o jogo usa a cópia em assets/models/kaykit/)
+KayKit_Restaurant_Bits_1.0_FREE/
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Segredos locais (nunca commitar)
+.env
+.env.*

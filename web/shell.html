@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+	<head>
+		<meta charset="utf-8">
+		<!-- Sem zoom; viewport-fit=cover libera env(safe-area-inset-*) no iPhone. -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="apple-mobile-web-app-title" content="Cantina">
+		<meta name="theme-color" content="#F3E3C3">
+		<meta name="format-detection" content="telephone=no">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+/* Splash placeholder da Cantina (paleta: creme, verde-água, laranja). Só HTML/CSS: nenhum arquivo extra. */
+:root {
+	--cream: #F3E3C3;
+	--teal: #2BB59A;
+	--orange: #E8713A;
+	--ink: #3A2A1E;
+}
+
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: var(--ink);
+	background-color: var(--cream);
+	overflow: hidden;
+	touch-action: none;
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 18px;
+	background-color: var(--cream);
+	transition: opacity 0.3s ease;
+}
+
+#status.fade {
+	opacity: 0;
+}
+
+#status-title {
+	margin: 0;
+	font-size: clamp(40px, 9vmin, 88px);
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	color: var(--orange);
+}
+
+#status-progress {
+	width: min(60vw, 420px);
+	height: 14px;
+	border-radius: 7px;
+	background-color: rgba(43, 181, 154, 0.25);
+	overflow: hidden;
+}
+
+#status-progress-fill {
+	width: 0;
+	height: 100%;
+	border-radius: 7px;
+	background-color: var(--teal);
+	transition: width 0.2s ease;
+}
+
+#status-progress.indeterminate #status-progress-fill {
+	width: 30%;
+	animation: slide 1.2s ease-in-out infinite;
+}
+
+@keyframes slide {
+	from { transform: translateX(-100%); }
+	to { transform: translateX(340%); }
+}
+
+#status-notice {
+	display: none;
+	max-width: 80vw;
+	padding: 12px 18px;
+	border-radius: 10px;
+	background-color: var(--orange);
+	color: #FFFFFF;
+	text-align: center;
+	line-height: 1.4;
+}
+
+/* Jogo em paisagem: no celular em pé, pede para girar. */
+#rotate {
+	display: none;
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background-color: var(--teal);
+	color: #FFFFFF;
+	font-size: 22px;
+	font-weight: 700;
+	text-align: center;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+	#rotate {
+		display: flex;
+	}
+}
+		</style>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">
+			Seu navegador não suporta o elemento canvas.
+		</canvas>
+
+		<noscript>
+			Ative o JavaScript para jogar.
+		</noscript>
+
+		<div id="status">
+			<h1 id="status-title">Cantina</h1>
+			<div id="status-progress"><div id="status-progress-fill"></div></div>
+			<div id="status-notice"></div>
+		</div>
+
+		<div id="rotate" aria-live="polite">Gire o celular para jogar na horizontal ↻</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusProgress = document.getElementById('status-progress');
+	const statusFill = document.getElementById('status-progress-fill');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+
+	function hideStatus() {
+		initializing = false;
+		statusOverlay.classList.add('fade');
+		setTimeout(() => statusOverlay.remove(), 300);
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		let msg = 'Ocorreu um erro desconhecido.';
+		if (err instanceof Error) {
+			msg = err.message;
+		} else if (typeof err === 'string') {
+			msg = err;
+		}
+		statusProgress.style.display = 'none';
+		statusNotice.textContent = msg;
+		statusNotice.style.display = 'block';
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+	if (missing.length !== 0) {
+		displayFailureNotice('Seu navegador não tem os recursos necessários para rodar o jogo: ' + missing.join(', '));
+		return;
+	}
+
+	statusProgress.classList.add('indeterminate');
+	engine.startGame({
+		'onProgress': function (current, total) {
+			if (!initializing) {
+				return;
+			}
+			if (current > 0 && total > 0) {
+				statusProgress.classList.remove('indeterminate');
+				statusFill.style.width = Math.min(100, Math.round((current / total) * 100)) + '%';
+			} else {
+				statusProgress.classList.add('indeterminate');
+			}
+		},
+	}).then(hideStatus, displayFailureNotice);
+}());
+		</script>
+	</body>
+</html>
