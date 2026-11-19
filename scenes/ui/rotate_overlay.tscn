@@ -1,0 +1,73 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/rotate_overlay.gd" id="1_rot"]
+[ext_resource type="Theme" path="res://assets/ui/cantina_theme.tres" id="2_theme"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_phone"]
+bg_color = Color(0.909804, 0.443137, 0.227451, 1)
+border_width_left = 6
+border_width_top = 14
+border_width_right = 6
+border_width_bottom = 14
+border_color = Color(0.290196, 0.180392, 0.133333, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[node name="RotateOverlay" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_rot")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="Bg" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.952941, 0.890196, 0.764706, 0.97)
+
+[node name="Center" type="VBoxContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -150.0
+offset_right = 300.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 40
+
+[node name="PhoneBox" type="CenterContainer" parent="Root/Center"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Phone" type="Panel" parent="Root/Center/PhoneBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 140)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_phone")
+
+[node name="Hint" type="Label" parent="Root/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OverlayLabel"
+text = "Gire o celular"
+horizontal_alignment = 1

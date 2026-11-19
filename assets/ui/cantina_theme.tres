@@ -1,0 +1,176 @@
+[gd_resource type="Theme" format=3]
+
+[ext_resource type="FontFile" path="res://assets/ui/fonts/Fredoka.ttf" id="1_gt8xs"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0hmq1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6w6kh"]
+content_margin_left = 28.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(0.9206275, 0.5099608, 0.32015687, 1)
+border_width_bottom = 4
+border_color = Color(0.78039217, 0.41960785, 0.27058825, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_63bs0"]
+content_margin_left = 28.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(0.9098039, 0.44313726, 0.22745098, 1)
+border_width_bottom = 4
+border_color = Color(0.78039217, 0.41960785, 0.27058825, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5xqv6"]
+content_margin_left = 28.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(0.78039217, 0.41960785, 0.27058825, 1)
+border_color = Color(0.78039217, 0.41960785, 0.27058825, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[sub_resource type="FontVariation" id="FontVariation_0pmup"]
+base_font = ExtResource("1_gt8xs")
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_r0gyo"]
+base_font = ExtResource("1_gt8xs")
+variation_opentype = {
+2003265652: 600
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nnxob"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 0.99215686, 0.9647059, 1)
+border_width_top = 5
+border_width_bottom = 3
+border_color = Color(0.27450982, 0.7529412, 0.56078434, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.29, 0.18, 0.13, 0.22)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="FontVariation" id="FontVariation_v1arx"]
+base_font = ExtResource("1_gt8xs")
+variation_opentype = {
+2003265652: 600
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s7h7j"]
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 0.9764706, 0.9254902, 1)
+border_width_bottom = 3
+border_color = Color(0.8980392, 0.827451, 0.7019608, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0.29, 0.18, 0.13, 0.22)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="FontVariation" id="FontVariation_if63c"]
+base_font = ExtResource("1_gt8xs")
+variation_opentype = {
+2003265652: 600
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u14v4"]
+content_margin_left = 9.0
+content_margin_top = 2.0
+content_margin_right = 9.0
+content_margin_bottom = 2.0
+bg_color = Color(0.78039217, 0.41960785, 0.27058825, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="FontVariation" id="FontVariation_ub38s"]
+base_font = ExtResource("1_gt8xs")
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_8o3l3"]
+base_font = ExtResource("1_gt8xs")
+variation_opentype = {
+2003265652: 500
+}
+
+[resource]
+default_font = SubResource("FontVariation_8o3l3")
+default_font_size = 22
+Button/colors/font_color = Color(1, 0.9764706, 0.9254902, 1)
+Button/colors/font_focus_color = Color(1, 0.9764706, 0.9254902, 1)
+Button/colors/font_hover_color = Color(1, 0.9764706, 0.9254902, 1)
+Button/colors/font_pressed_color = Color(1, 0.9764706, 0.9254902, 1)
+Button/font_sizes/font_size = 28
+Button/styles/focus = SubResource("StyleBoxEmpty_0hmq1")
+Button/styles/hover = SubResource("StyleBoxFlat_6w6kh")
+Button/styles/normal = SubResource("StyleBoxFlat_63bs0")
+Button/styles/pressed = SubResource("StyleBoxFlat_5xqv6")
+CreditsLabel/base_type = &"Label"
+CreditsLabel/colors/font_color = Color(0.2901961, 0.18039216, 0.13333334, 1)
+CreditsLabel/font_sizes/font_size = 16
+FeedbackLabel/base_type = &"Label"
+FeedbackLabel/colors/font_outline_color = Color(1, 0.9764706, 0.9254902, 1)
+FeedbackLabel/constants/outline_size = 12
+FeedbackLabel/font_sizes/font_size = 40
+FeedbackLabel/fonts/font = SubResource("FontVariation_0pmup")
+HintLabel/base_type = &"Label"
+HintLabel/colors/font_color = Color(0.2901961, 0.18039216, 0.13333334, 1)
+HintLabel/font_sizes/font_size = 34
+Label/colors/font_color = Color(0.2901961, 0.18039216, 0.13333334, 1)
+OverlayLabel/base_type = &"Label"
+OverlayLabel/colors/font_color = Color(0.2901961, 0.18039216, 0.13333334, 1)
+OverlayLabel/font_sizes/font_size = 44
+OverlayLabel/fonts/font = SubResource("FontVariation_r0gyo")
+ReplyPanel/base_type = &"PanelContainer"
+ReplyPanel/styles/panel = SubResource("StyleBoxFlat_nnxob")
+TicketName/base_type = &"Label"
+TicketName/colors/font_color = Color(0.2901961, 0.18039216, 0.13333334, 1)
+TicketName/font_sizes/font_size = 19
+TicketName/fonts/font = SubResource("FontVariation_v1arx")
+TicketPanel/base_type = &"PanelContainer"
+TicketPanel/styles/panel = SubResource("StyleBoxFlat_s7h7j")
+TicketPhrase/base_type = &"Label"
+TicketPhrase/colors/font_color = Color(0.41960785, 0.2901961, 0.22745098, 1)
+TicketPhrase/constants/line_spacing = -2
+TicketPhrase/font_sizes/font_size = 15
+TicketWithout/base_type = &"Label"
+TicketWithout/colors/font_color = Color(1, 0.9764706, 0.9254902, 1)
+TicketWithout/font_sizes/font_size = 15
+TicketWithout/fonts/font = SubResource("FontVariation_if63c")
+TicketWithout/styles/normal = SubResource("StyleBoxFlat_u14v4")
+TitleLabel/base_type = &"Label"
+TitleLabel/colors/font_color = Color(0.9098039, 0.44313726, 0.22745098, 1)
+TitleLabel/colors/font_shadow_color = Color(0.78039217, 0.41960785, 0.27058825, 1)
+TitleLabel/constants/shadow_offset_x = 0
+TitleLabel/constants/shadow_offset_y = 7
+TitleLabel/font_sizes/font_size = 128
+TitleLabel/fonts/font = SubResource("FontVariation_ub38s")

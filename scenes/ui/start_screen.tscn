@@ -1,0 +1,92 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/start_screen.gd" id="1_start"]
+[ext_resource type="Theme" path="res://assets/ui/cantina_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" path="res://assets/icons/food_burger.png" id="3_burger"]
+
+[node name="StartScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_start")
+
+[node name="Wall" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.952941, 0.890196, 0.764706, 1)
+
+[node name="Molding" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_top = 0.8
+anchor_right = 1.0
+anchor_bottom = 0.84
+mouse_filter = 2
+color = Color(0.780392, 0.419608, 0.270588, 1)
+
+[node name="Tiles" type="ColorRect" parent="."]
+layout_mode = 1
+anchor_top = 0.84
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.27451, 0.752941, 0.560784, 1)
+
+[node name="Center" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.42
+anchor_right = 0.5
+anchor_bottom = 0.42
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+alignment = 1
+theme_override_constants/separation = 0
+
+[node name="Burger" type="TextureRect" parent="Center"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("3_burger")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Cantina"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Toque para começar"
+horizontal_alignment = 1
+
+[node name="Credits" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_top = 0.84
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_type_variation = &"CreditsLabel"
+text = "Assets: Kay Lousberg (KayKit, CC0)"
+horizontal_alignment = 1
+vertical_alignment = 1
