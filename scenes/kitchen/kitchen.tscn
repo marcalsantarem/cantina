@@ -1,0 +1,430 @@
+[gd_scene load_steps=38 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/floor_kitchen.gltf" id="1_floor_kitchen"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/wall.gltf" id="2_wall"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/wall_orderwindow.gltf" id="3_wall_orderwindow"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/kitchencounter_straight_B.gltf" id="4_kitchencounter_straight_B"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/kitchencounter_straight_A.gltf" id="5_kitchencounter_straight_A"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/stove_single.gltf" id="6_stove_single"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/extractorhood.gltf" id="7_extractorhood"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_buns.gltf" id="8_crate_buns"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_steak.gltf" id="9_crate_steak"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_cheese.gltf" id="10_crate_cheese"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_lettuce.gltf" id="11_crate_lettuce"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_tomatoes.gltf" id="12_crate_tomatoes"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/cuttingboard.gltf" id="13_cuttingboard"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/knife.gltf" id="14_knife"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/pan_A.gltf" id="15_pan_A"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/plate.gltf" id="16_plate"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/towelrail.gltf" id="17_towelrail"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/shelf_papertowel_decorated.gltf" id="18_shelf_papertowel_decorated"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.952941, 0.890196, 0.764706, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.91, 0.78, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2"]
+albedo_color = Color(0.78, 0.42, 0.27, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_3"]
+material = SubResource("StandardMaterial3D_2")
+size = Vector3(28, 0.3, 0.7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4"]
+albedo_color = Color(0.95, 0.87, 0.76, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_5"]
+material = SubResource("StandardMaterial3D_4")
+size = Vector3(28, 5, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6"]
+albedo_color = Color(0.62, 0.36, 0.24, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_7"]
+material = SubResource("StandardMaterial3D_6")
+size = Vector3(2.6, 0.45, 1.1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8"]
+size = Vector3(1.2, 0.7, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_9"]
+size = Vector3(1.2, 0.7, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_10"]
+size = Vector3(1.2, 0.7, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_11"]
+size = Vector3(1.2, 0.7, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_12"]
+size = Vector3(1.2, 0.7, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_13"]
+size = Vector3(1.8, 0.8, 1.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_14"]
+size = Vector3(2, 0.8, 1.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_15"]
+size = Vector3(2.6, 0.8, 1.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_16"]
+size = Vector3(2.8, 1.8, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_17"]
+size = Vector3(3.6, 0.7, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_18"]
+albedo_color = Color(0.62, 0.66, 0.68, 1)
+metallic = 0.4
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_19"]
+material = SubResource("StandardMaterial3D_18")
+size = Vector3(3.6, 0.08, 0.08)
+
+[node name="Kitchen" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.8944, -0.3229, 0.3094, 0, 0.6919, 0.722, -0.4472, -0.6458, 0.6189, 0, 10, 0)
+light_color = Color(1, 0.95, 0.86, 1)
+light_energy = 1.0
+shadow_enabled = false
+
+[node name="MainCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.766, 0.6428, 0, -0.6428, 0.766, -2.6, 18.2697, 19.1511)
+keep_aspect = 0
+fov = 29.0
+current = true
+near = 0.5
+far = 100.0
+
+[node name="Set" type="Node3D" parent="."]
+
+[node name="Floor_0_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, -0.5, -0.5)
+
+[node name="Floor_0_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, -0.5, 3.5)
+
+[node name="Floor_0_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, -0.5, 7.5)
+
+[node name="Floor_1_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, -0.5, -0.5)
+
+[node name="Floor_1_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, -0.5, 3.5)
+
+[node name="Floor_1_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, -0.5, 7.5)
+
+[node name="Floor_2_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, -0.5, -0.5)
+
+[node name="Floor_2_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, -0.5, 3.5)
+
+[node name="Floor_2_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, -0.5, 7.5)
+
+[node name="Floor_3_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, -0.5, -0.5)
+
+[node name="Floor_3_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, -0.5, 3.5)
+
+[node name="Floor_3_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, -0.5, 7.5)
+
+[node name="Floor_4_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, -0.5)
+
+[node name="Floor_4_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, 3.5)
+
+[node name="Floor_4_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, -0.5, 7.5)
+
+[node name="Floor_5_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, -0.5, -0.5)
+
+[node name="Floor_5_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, -0.5, 3.5)
+
+[node name="Floor_5_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, -0.5, 7.5)
+
+[node name="Floor_6_0" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, -0.5, -0.5)
+
+[node name="Floor_6_1" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, -0.5, 3.5)
+
+[node name="Floor_6_2" parent="Set" instance=ExtResource("1_floor_kitchen")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, -0.5, 7.5)
+
+[node name="Wall_0" parent="Set" instance=ExtResource("2_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.5, 0, -1.25)
+
+[node name="Wall_1" parent="Set" instance=ExtResource("2_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 0, -1.25)
+
+[node name="Wall_2" parent="Set" instance=ExtResource("2_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, -1.25)
+
+[node name="Wall_3" parent="Set" instance=ExtResource("2_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -1.25)
+
+[node name="Wall_4" parent="Set" instance=ExtResource("3_wall_orderwindow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, -1.45)
+
+[node name="Wall_5" parent="Set" instance=ExtResource("2_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, -1.25)
+
+[node name="Wall_6" parent="Set" instance=ExtResource("2_wall")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0, -1.25)
+
+[node name="Trim" type="MeshInstance3D" parent="Set"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 4.1, -1.25)
+mesh = SubResource("BoxMesh_3")
+
+[node name="UpperWall" type="MeshInstance3D" parent="Set"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 6.6, -1.35)
+mesh = SubResource("BoxMesh_5")
+
+[node name="Counter_0" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 0, 0)
+
+[node name="Counter_1" parent="Set" instance=ExtResource("5_kitchencounter_straight_A")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 0, 0)
+
+[node name="Counter_2" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 0, 0)
+
+[node name="Counter_3" parent="Set" instance=ExtResource("5_kitchencounter_straight_A")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0, 0)
+
+[node name="Counter_4" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 0)
+
+[node name="Counter_5" parent="Set" instance=ExtResource("5_kitchencounter_straight_A")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0, 0)
+
+[node name="Counter_6" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0)
+
+[node name="Counter_7" parent="Set" instance=ExtResource("5_kitchencounter_straight_A")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 0)
+
+[node name="Counter_8" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, 0)
+
+[node name="Counter_9" parent="Set" instance=ExtResource("5_kitchencounter_straight_A")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, 0)
+
+[node name="Counter_10" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 0)
+
+[node name="Stove" parent="Set" instance=ExtResource("6_stove_single")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0)
+
+[node name="Hood" parent="Set" instance=ExtResource("7_extractorhood")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -1)
+
+[node name="Stations" type="Node3D" parent="."]
+
+[node name="CrateRiser" type="MeshInstance3D" parent="Set"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.75, 1.225, -0.5)
+mesh = SubResource("BoxMesh_7")
+
+[node name="Crate_bun" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_bun"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_8")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_bun"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Model" parent="Stations/Crate_bun" instance=ExtResource("8_crate_buns")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="Crate_burger" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.75, 1, 0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_burger"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_9")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_burger"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Model" parent="Stations/Crate_burger" instance=ExtResource("9_crate_steak")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="Crate_cheese" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1, 0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_cheese"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_10")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_cheese"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Model" parent="Stations/Crate_cheese" instance=ExtResource("10_crate_cheese")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="Crate_lettuce" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.375, 1.45, -0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_lettuce"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_11")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_lettuce"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Model" parent="Stations/Crate_lettuce" instance=ExtResource("11_crate_lettuce")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="Crate_tomato" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.125, 1.45, -0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_tomato"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_12")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_tomato"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="Model" parent="Stations/Crate_tomato" instance=ExtResource("12_crate_tomatoes")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="CuttingBoard" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 1, 0.2)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/CuttingBoard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("BoxShape3D_13")
+
+[node name="Snap" type="Marker3D" parent="Stations/CuttingBoard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+
+[node name="Model" parent="Stations/CuttingBoard" instance=ExtResource("13_cuttingboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Knife" parent="Stations/CuttingBoard" instance=ExtResource("14_knife")]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.55, 0.15, 0.1)
+
+[node name="Stove_Pan" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.21, 0.1)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Stove_Pan"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.2)
+shape = SubResource("BoxShape3D_14")
+
+[node name="Snap" type="Marker3D" parent="Stations/Stove_Pan"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+
+[node name="Pan" parent="Stations/Stove_Pan" instance=ExtResource("15_pan_A")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Plate_Assembly" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 1, 0.3)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Plate_Assembly"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, 0.4, 0)
+shape = SubResource("BoxShape3D_15")
+
+[node name="Snap" type="Marker3D" parent="Stations/Plate_Assembly"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+
+[node name="BunTopRest" type="Marker3D" parent="Stations/Plate_Assembly"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.15, 0.02, 0)
+
+[node name="Plate" parent="Stations/Plate_Assembly" instance=ExtResource("16_plate")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0)
+
+[node name="OrderWindow" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.2, -1.2)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/OrderWindow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -0.2)
+shape = SubResource("BoxShape3D_16")
+
+[node name="Snap" type="Marker3D" parent="Stations/OrderWindow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+
+[node name="TicketRail" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 3.4, -0.9)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("BoxShape3D_17")
+
+[node name="Snap" type="Marker3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Slot1" type="Marker3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0, 0.1)
+
+[node name="Slot2" type="Marker3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.1)
+
+[node name="Slot3" type="Marker3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 0, 0.1)
+
+[node name="Bar" type="MeshInstance3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("BoxMesh_19")
+
+[node name="Decor" type="Node3D" parent="."]
+
+[node name="Towel" parent="Decor" instance=ExtResource("17_towelrail")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0, 0)
+
+[node name="Shelf" parent="Decor" instance=ExtResource("18_shelf_papertowel_decorated")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3.3, -1)

@@ -1,0 +1,45 @@
+{
+	"id": "food_burger",
+	"icon": "food_burger",
+	"layers": [
+		"food_ingredient_bun_bottom",
+		"food_ingredient_burger_cooked",
+		"food_ingredient_cheese_slice",
+		"food_ingredient_lettuce_slice",
+		"food_ingredient_tomato_slice",
+		"food_ingredient_bun_top"
+	],
+	"aliases": {
+		"food_ingredient_burger_uncooked": "food_ingredient_burger_cooked",
+		"food_ingredient_burger_trash": "food_ingredient_burger_cooked",
+		"food_ingredient_lettuce_chopped": "food_ingredient_lettuce_slice"
+	},
+	"patty": "food_ingredient_burger_cooked",
+	"cut_layers": ["food_ingredient_lettuce_slice", "food_ingredient_tomato_slice"],
+	"optional": ["food_ingredient_cheese_slice", "food_ingredient_lettuce_slice", "food_ingredient_tomato_slice"],
+	"chop": {
+		"food_ingredient_lettuce": {
+			"cuts": 6,
+			"result": "food_ingredient_lettuce_slice",
+			"overcut": 10,
+			"overcut_result": "food_ingredient_lettuce_chopped",
+			"carry": "food_ingredient_lettuce_slice",
+			"overcut_carry": "food_ingredient_lettuce_chopped"
+		},
+		"food_ingredient_tomato": {
+			"cuts": 6,
+			"result": "food_ingredient_tomato_slices",
+			"overcut": 0,
+			"overcut_result": "",
+			"carry": "food_ingredient_tomato_slice",
+			"overcut_carry": ""
+		}
+	},
+	"crates": {
+		"bun": "food_ingredient_bun",
+		"burger": "food_ingredient_burger_uncooked",
+		"cheese": "food_ingredient_cheese_slice",
+		"lettuce": "food_ingredient_lettuce",
+		"tomato": "food_ingredient_tomato"
+	}
+}

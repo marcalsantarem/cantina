@@ -114,3 +114,12 @@ Sufixo de `Crate_<ingrediente>` = chave curta (`bun`, `burger`, `cheese`, `lettu
 ## 6. Respostas
 
 Decisões 11 a 15: queijo já fatiado; prato incompleto pode ser servido; sem moeda no M1; palavra + brilho ao fim de cada gesto ("Perfeito!", "Bom", "Ops"); carne de `crate_steak`; pão se divide sozinho no prato; sem lixeira.
+
+## 7. Esclarecimentos da implementação (T-005)
+
+- Picar: a nota de corte usa todos os cortes válidos do ingrediente, somando as sessões; pontos de virada = as duas pontas de cada traço válido; ponto fora da largura do ingrediente não conta faixa. Inversão em y só conta com recuo ≥ 0,01 u (filtra tremor).
+- Puxão: medido a partir do toque inicial (≤ 250 ms). Enquanto o movimento parece puxão, o arrastar espera; passado o prazo, vira arrastar normal.
+- Carne: a nota de um lado é gravada sempre que ele sai de baixo (virar ou tirar); com várias viradas vale a última. Ao tirar, lado sem nota recebe a nota do seu tempo (0 s = `desajeitado`). Queimado mostra "Ops".
+- Ordem: posições corretas = maior subsequência comum entre as camadas pedidas e a pilha (extras e proibidos não tiram posição; ausente conta como errada).
+- Erro dominante: componente com maior perda ponderada (desempate: cozimento, pedido, ordem, corte, alinhamento), traduzido em `burnt`, `raw`, `missing`, `forbidden`, `order`, `cut`, `alignment`, `cooking`. A frase de resposta = frase da faixa + gancho, quando o erro tem gancho nos dados.
+- Bilhetes: com a fila vazia o primeiro também espera 6 s (a cena pode chamar `spawn()` para adiantar).

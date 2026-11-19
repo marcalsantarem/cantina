@@ -1,0 +1,45 @@
+{
+	"bands": {
+		"great": [
+			"Lambi até o prato. Não conta pra ninguém.",
+			"Chef, isso foi poesia com queijo.",
+			"Melhor hambúrguer da semana, e olha que hoje é segunda.",
+			"Vou sonhar com esse hambúrguer hoje.",
+			"Tá de parabéns! Voltei a acreditar no amor."
+		],
+		"ok": [
+			"Gostei! Comi metade e guardei o resto pro coração.",
+			"Bom demais, só a alface tava meio rebelde.",
+			"Tava gostoso! Amanhã eu volto pra conferir de novo.",
+			"Honesto e caprichado. Valeu, chef!"
+		],
+		"poor": [
+			"Chef, acho que esse hambúrguer viu coisas... mas valeu o carinho.",
+			"Vou levar pra casa pra estudar.",
+			"Foi uma experiência. Não sei de quê, mas foi.",
+			"Obrigado pela intenção, chef. A intenção estava ótima."
+		]
+	},
+	"hooks": {
+		"burnt": [
+			"Gosto de bem passado, mas esse já passou da conta!",
+			"A carne tinha um leve sabor de churrasco de São João."
+		],
+		"forbidden": [
+			"E aquele item que eu pedi pra tirar? Achei ele, tá?",
+			"Pedi sem, mas veio com. Tudo bem, a gente se adapta."
+		],
+		"order": [
+			"Montagem criativa: comi de cabeça pra baixo pra acertar.",
+			"As camadas estavam meio de mudança, né?"
+		],
+		"missing": [
+			"Senti falta de alguém nesse hambúrguer.",
+			"Faltou um pedaço da história, chef."
+		],
+		"raw": [
+			"A carne ainda tava meio tímida, quase mugindo.",
+			"Mal passado é charme, mas esse quase voltou pro pasto."
+		]
+	}
+}

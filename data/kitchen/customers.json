@@ -1,0 +1,19 @@
+{
+	"customers": [
+		{"nickname": "Zé do Bairro", "phrases": ["O de sempre, caprichado que hoje é sexta!", "Capricha, chef, que eu vim a pé."]},
+		{"nickname": "Dona Cida", "phrases": ["Um hambúrguer bem arrumadinho, meu filho.", "Do jeitinho que minha avó faria."]},
+		{"nickname": "Turma do 3º B", "phrases": ["Queremos o mais bonito que você já fez.", "É pra foto da formatura, viu?"]},
+		{"nickname": "Seu Valdir", "phrases": ["Um completo, que hoje eu mereço.", "Faz com calma, eu espero."]},
+		{"nickname": "Bia da Padaria", "phrases": ["Um hambúrguer pra alegrar a tarde!", "Pão eu entendo, o resto é com você."]},
+		{"nickname": "Professor Otávio", "phrases": ["Hambúrguer, por gentileza. Camadas na ordem, se possível.", "Quero avaliar sua técnica hoje."]},
+		{"nickname": "Lu do Skate", "phrases": ["Manda um, chef, tô morrendo de fome!", "Um daqueles bem montados, valeu!"]},
+		{"nickname": "Tio Jorge", "phrases": ["Um hambúrguer igual ao da minha infância.", "Bem feitinho, que eu conto pros amigos."]},
+		{"nickname": "Marina da Banca", "phrases": ["Um hambúrguer e uma boa notícia, por favor.", "Me surpreende, chef."]},
+		{"nickname": "Dr. Ribamar", "phrases": ["Um hambúrguer, receita médica: sorrir depois.", "Capriche no ponto da carne."]}
+	],
+	"without_phrases": {
+		"food_ingredient_cheese_slice": ["Sem queijo, que eu tô de regime (de queijo).", "Esse sem queijo, por favor."],
+		"food_ingredient_lettuce_slice": ["Sem alface, que eu não sou coelho.", "Tira a alface, por favorzinho."],
+		"food_ingredient_tomato_slice": ["Sem tomate, por favor, é sério.", "Nada de tomate, combinado?"]
+	}
+}
