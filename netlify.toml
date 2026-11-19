@@ -1,6 +1,11 @@
 # Netlify: o jogo web é publicado pelo GitHub Actions (build/web, deploy com --no-build). Sem funções.
 # Arquivos do Godot não têm hash no nome: nada de cache imutável. index.* (html, js, wasm, pck,
 # manifesto e service worker do PWA) revalida sempre (ETag) para nunca misturar versões.
+# Se o site estiver ligado ao repositório no Netlify, os builds automáticos do próprio Netlify
+# publicariam a raiz do repo (sem index.html) por cima do deploy do CI no mesmo alias. Cancelamos todos.
+[build]
+  ignore = "exit 0"
+
 [[headers]]
   for = "/index.*"
   [headers.values]
