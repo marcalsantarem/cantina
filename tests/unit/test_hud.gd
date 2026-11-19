@@ -3,6 +3,7 @@ extends GutTest
 
 const Fake := preload("res://tests/fakes/fake_kitchen_controller.gd")
 const HudScene := preload("res://scenes/ui/hud.tscn")
+const Hud := preload("res://src/ui/hud.gd")
 const UiText := preload("res://src/ui/ui_text.gd")
 const RotateOverlay := preload("res://src/ui/rotate_overlay.gd")
 
@@ -15,6 +16,7 @@ func before_each() -> void:
 	add_child_autofree(fake)
 	hud = HudScene.instantiate()
 	add_child_autofree(hud)
+	hud.set_ui_scale(1.0)  # janela headless não reflete a tela real
 	hud.bind(fake)
 
 
@@ -24,19 +26,19 @@ func _ticket(without: Array[String] = []) -> TicketData:
 
 func test_ticket_added_creates_card_near_slot() -> void:
 	fake.ticket_added.emit(0, _ticket(["food_ingredient_tomato_slice"]))
-	await wait_frames(3)
+	await wait_process_frames(3)
 	var card: Control = hud.get_card(0)
 	assert_not_null(card)
 	assert_eq(card.get_node("%Name").text, "Dona Cida")
 	assert_true(card.without_label().visible)
 	assert_eq(card.without_label().text, "sem tomate")
 	assert_not_null(card.icon_texture(), "ícone do prato")
-	assert_eq(card.anchor_point, fake.get_slot_screen_position(0))
+	assert_eq(card.anchor_point * hud.ui_scale, fake.get_slot_screen_position(0))
 
 
 func test_without_hidden_when_empty() -> void:
 	fake.ticket_added.emit(1, _ticket())
-	await wait_frames(2)
+	await wait_process_frames(2)
 	assert_false(hud.get_card(1).without_label().visible)
 
 
@@ -59,7 +61,7 @@ func test_served_turns_into_reply_and_disappears() -> void:
 	hud.reply_seconds = 0.3
 	var t := _ticket(["food_ingredient_cheese_slice"])
 	fake.ticket_added.emit(2, t)
-	await wait_frames(2)
+	await wait_process_frames(2)
 	var card: Control = hud.get_card(2)
 	fake.ticket_served.emit(2, t, 91, 0, "Chef, isso foi poesia com queijo.")
 	assert_null(hud.get_card(2), "slot liberado")
@@ -80,9 +82,70 @@ func test_served_without_open_card_still_shows_reply() -> void:
 	assert_eq(hud.get_cards()[0].stamp_band(), 2)
 
 
+func test_oldest_open_ticket_is_next() -> void:
+	for i in 3:
+		fake.ticket_added.emit(i, _ticket())
+	await wait_process_frames(2)
+	assert_eq(hud.get_next_slot(), 0)
+	assert_true(hud.get_card(0).is_next, "mais antigo destacado")
+	assert_false(hud.get_card(1).is_next)
+	assert_false(hud.get_card(2).is_next)
+	fake.ticket_served.emit(0, _ticket(), 90, 0, "ok")
+	assert_eq(hud.get_next_slot(), 1)
+	assert_true(hud.get_card(1).is_next)
+	fake.ticket_added.emit(0, _ticket())  # novo entra no slot 0, mas é o mais novo
+	assert_eq(hud.get_next_slot(), 1, "FIFO, não ordem de slot")
+	assert_false(hud.get_card(0).is_next)
+	fake.ticket_served.emit(1, _ticket(), 90, 0, "ok")
+	fake.ticket_served.emit(2, _ticket(), 90, 0, "ok")
+	assert_eq(hud.get_next_slot(), 0)
+	assert_true(hud.get_card(0).is_next)
+	fake.ticket_served.emit(0, _ticket(), 90, 0, "ok")
+	assert_eq(hud.get_next_slot(), -1)
+
+
+func test_next_card_is_lifted() -> void:
+	fake.ticket_added.emit(0, _ticket())
+	fake.ticket_added.emit(1, _ticket())
+	await wait_seconds(0.6)
+	var a: Control = hud.get_card(0)
+	var b: Control = hud.get_card(1)
+	assert_true(a.position.y < b.position.y - 5.0, "o próximo fica mais alto")
+
+
+func test_ticket_scale_for_low_screens() -> void:
+	var s := 390.0 / 720.0  # 844x390 com stretch canvas_items
+	var k := Hud.ticket_scale_for(s, 15.0, 13.0)
+	assert_true(15.0 * s * k >= 13.0 - 0.01, "frase >= 13 px")
+	assert_eq(Hud.ticket_scale_for(1.0, 15.0, 13.0), 1.0, "1280x720 sem ampliação")
+	assert_eq(Hud.ticket_scale_for(0.1, 15.0, 13.0, 2.0), 2.0, "limite")
+
+
+func test_compact_cards_scaled_two_lines_on_screen() -> void:
+	hud.set_ui_scale(1.6)
+	var long := Fake.make_ticket(2, "Professor Otávio", "Capricha no ponto, sem pressa, e pode tirar a alface que hoje eu tô de regime.", [] as Array[String])
+	for i in 3:
+		fake.ticket_added.emit(i, long if i == 1 else _ticket())
+	await wait_seconds(0.6)
+	var card: Control = hud.get_card(1)
+	assert_true(card.compact)
+	assert_eq(card.phrase_label().max_lines_visible, 2)
+	assert_true(card.phrase_label().get_line_count() <= 2, "frase em até 2 linhas")
+	assert_true(card.phrase_text().ends_with("…"), "reticências")
+	assert_false(hud.get_card(0).phrase_text().ends_with("…"), "frase curta inteira")
+	assert_eq(hud.get_node("Tickets").scale, Vector2.ONE * 1.6)
+	var vp := hud.get_viewport().get_visible_rect().size
+	for i in 3:
+		var r: Rect2 = hud.get_card(i).get_global_rect()
+		assert_true(r.position.x >= 0.0 and r.end.x <= vp.x + 0.5, "dentro da tela %d" % i)
+	fake.ticket_served.emit(1, long, 90, 0, "Uma resposta comprida que não deve ser cortada no bilhete-resposta.")
+	await wait_seconds(0.3)
+	assert_eq(card.phrase_label().max_lines_visible, -1, "resposta inteira")
+
+
 func test_gesture_feedback_word() -> void:
 	fake.gesture_feedback.emit(2, "Perfeito!", Vector2(400, 300))
-	await wait_frames(1)
+	await wait_process_frames(1)
 	var words: Array = hud.get_node("Feedback").get_children()
 	assert_eq(words.size(), 1)
 	var w: Label = words[0]

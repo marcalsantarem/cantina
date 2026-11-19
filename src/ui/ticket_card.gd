@@ -7,6 +7,11 @@ const ICON_PATH := "res://assets/icons/%s.png"
 const RAIL_OVERLAP := 14.0
 const MARGIN := 8.0
 const CLIP_COLOR := Color("#9ea8ad")
+const NEXT_COLOR := Color("#c76b45")
+const NEXT_TEXT := "próximo"
+const NEXT_LIFT := 12.0
+## Linhas da frase no modo compacto (telas baixas).
+const COMPACT_LINES := 2
 
 var slot := -1
 var is_reply := false
@@ -24,6 +29,25 @@ var float_offset := Vector2.ZERO:
 	set(v):
 		float_offset = v
 		_place()
+## Bilhete mais antigo aberto: é ele que recebe o próximo prato.
+var is_next := false:
+	set(v):
+		if v == is_next:
+			return
+		is_next = v
+		_animate_lift(NEXT_LIFT if v else 0.0)
+		queue_redraw()
+var next_lift := 0.0:
+	set(v):
+		next_lift = v
+		_place()
+## Modo compacto: frase do pedido em até COMPACT_LINES linhas com reticências.
+var compact := false:
+	set(v):
+		compact = v
+		_apply_compact()
+
+var _full_phrase := ""
 
 @onready var _icon: TextureRect = %Icon
 @onready var _name: Label = %Name
@@ -39,7 +63,8 @@ func _ready() -> void:
 
 func show_ticket(ticket: TicketData) -> void:
 	_name.text = ticket.nickname
-	_phrase.text = ticket.phrase
+	_full_phrase = ticket.phrase
+	_apply_compact()
 	var icon_path := ICON_PATH % ticket.recipe
 	_icon.texture = load(icon_path) if ResourceLoader.exists(icon_path) else null
 	_icon.visible = _icon.texture != null
@@ -69,6 +94,8 @@ func show_reply(reply: String, band: int) -> void:
 ## Troca o conteúdo para o bilhete-resposta (sem animação).
 func apply_reply(reply: String, band: int) -> void:
 	is_reply = true
+	is_next = false
+	_phrase.max_lines_visible = -1
 	theme_type_variation = &"ReplyPanel"
 	_icon.visible = false
 	_without.visible = false
@@ -110,14 +137,46 @@ func dismiss(duration := 0.4) -> void:
 	tw.chain().tween_callback(queue_free)
 
 
+func phrase_label() -> Label:
+	return _phrase
+
+
+func _apply_compact() -> void:
+	if _phrase == null or is_reply:
+		return
+	_phrase.text = _full_phrase
+	_phrase.max_lines_visible = COMPACT_LINES if compact else -1
+	if compact:
+		_fit_phrase.call_deferred()
+
+
+## Corta a frase por palavras, com reticências, até caber em COMPACT_LINES linhas.
+func _fit_phrase() -> void:
+	if is_reply or not compact or _phrase.get_line_count() <= COMPACT_LINES:
+		return
+	var words := _full_phrase.split(" ", false)
+	while words.size() > 1:
+		words.remove_at(words.size() - 1)
+		_phrase.text = " ".join(words).rstrip(",.;:") + "…"
+		if _phrase.get_line_count() <= COMPACT_LINES:
+			return
+
+
+func _animate_lift(target: float) -> void:
+	if not is_inside_tree():
+		next_lift = target
+		return
+	create_tween().tween_property(self, "next_lift", target, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 func _place() -> void:
 	if not is_inside_tree():
 		return
 	pivot_offset = size * 0.5
-	var vp := get_viewport_rect().size
+	var area := get_parent_area_size()
 	var p := anchor_point + layout_shift + float_offset - Vector2(size.x * 0.5, size.y - RAIL_OVERLAP)
-	p.x = clampf(p.x, MARGIN, maxf(MARGIN, vp.x - size.x - MARGIN))
-	p.y = maxf(p.y, MARGIN)
+	p.x = clampf(p.x, MARGIN, maxf(MARGIN, area.x - size.x - MARGIN))
+	p.y = maxf(maxf(p.y, MARGIN) - next_lift, 0.0)
 	position = p
 
 
@@ -125,3 +184,27 @@ func _draw() -> void:
 	var clip := Rect2(size.x * 0.5 - 16.0, -7.0, 32.0, 13.0)
 	draw_rect(clip, CLIP_COLOR)
 	draw_rect(Rect2(clip.position + Vector2(0, clip.size.y - 3), Vector2(clip.size.x, 3)), CLIP_COLOR.darkened(0.25))
+	if is_next:
+		_draw_next_tag()
+
+
+## Fita "próximo" pendurada na base do bilhete.
+func _draw_next_tag() -> void:
+	var font := get_theme_font("font", "TicketWithout")
+	var fs := get_theme_font_size("font_size", "TicketWithout")
+	var text_size := font.get_string_size(NEXT_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+	var tag := Rect2(Vector2(size.x * 0.5 - text_size.x * 0.5 - 12.0, size.y - 6.0), Vector2(text_size.x + 24.0, text_size.y + 4.0))
+	var ring := StyleBoxFlat.new()
+	ring.draw_center = false
+	ring.border_color = NEXT_COLOR
+	ring.set_border_width_all(3)
+	ring.set_corner_radius_all(14)
+	draw_style_box(ring, Rect2(Vector2.ZERO, size).grow(2.0))
+	var notch := 6.0
+	var mid := tag.size.y * 0.5
+	draw_colored_polygon(PackedVector2Array([tag.position, Vector2(tag.end.x, tag.position.y),
+			Vector2(tag.end.x - notch, tag.position.y + mid), tag.end, Vector2(tag.position.x, tag.end.y),
+			Vector2(tag.position.x + notch, tag.position.y + mid)]), NEXT_COLOR)
+	var cream := get_theme_color("font_color", "TicketWithout")
+	draw_string(font, Vector2(tag.position.x + 12.0, tag.position.y + 2.0 + font.get_ascent(fs)), NEXT_TEXT,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, fs, cream)
