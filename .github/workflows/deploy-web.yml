@@ -1,5 +1,5 @@
 # Testes GUT → export Web → deploy no Netlify.
-# dev  → https://preview--<site>.netlify.app (alias "preview"; o alias "dev" ficou preso no Netlify e dá 404)
+# dev  → https://dev--<site>.netlify.app (alias "dev")
 # main → https://<site>.netlify.app (produção)
 # tag  → https://<alias-da-tag>--<site>.netlify.app (nunca produção) + GitHub Release com o zip do build
 # Sem os segredos NETLIFY_AUTH_TOKEN/NETLIFY_SITE_ID o deploy é pulado (sem falhar); a Release da tag sai igual.
@@ -141,8 +141,8 @@ jobs:
             echo "DEPLOY_TARGET=--prod" >> "$GITHUB_ENV"
             echo "SITE_URL=https://${SITE_NAME}.netlify.app" >> "$GITHUB_ENV"
           else
-            echo "DEPLOY_TARGET=--alias=preview" >> "$GITHUB_ENV"
-            echo "SITE_URL=https://preview--${SITE_NAME}.netlify.app" >> "$GITHUB_ENV"
+            echo "DEPLOY_TARGET=--alias=dev" >> "$GITHUB_ENV"
+            echo "SITE_URL=https://dev--${SITE_NAME}.netlify.app" >> "$GITHUB_ENV"
           fi
 
       - uses: actions/download-artifact@v8.0.2
