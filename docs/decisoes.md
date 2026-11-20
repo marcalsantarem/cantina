@@ -17,3 +17,6 @@
 | 13 | Gorjeta no M1 | Decidido | Sem moeda no M1: a recompensa é só o bilhete-resposta. Moeda/progressão segue a decisão 9. | Definido pelo dono do projeto em 2026-11-19 |
 | 14 | Feedback do gesto | Decidido | Ao terminar cada gesto, uma palavra pequena ("Perfeito!", "Bom", "Ops") sobe do ingrediente, com brilho. | Definido pelo dono do projeto em 2026-11-19 |
 | 15 | Detalhes do M1 | Decidido | Carne vem de `crate_steak`; o pão se divide sozinho ao tocar o prato; sem lixeira (devolver ao caixote). | Definido pelo líder em 2026-11-19 (ajuste menor de design) |
+| 16 | Receita no bilhete | Decidido | Cada bilhete mostra a receita esperada (ingredientes na ordem, com ícones), já sem os itens do "sem". | Definido pelo dono do projeto em 2026-11-19 |
+| 17 | Prato alinhado | Decidido | Ingredientes montados ficam sempre centralizados e alinhados no prato (visual bonito). A precisão da soltura continua valendo só na nota de alinhamento, sem deslocar o visual. | Definido pelo dono do projeto em 2026-11-19 |
+| 18 | Dica de ação | Decidido | O jogo mostra qual ação fazer com cada ingrediente/estação (ex.: "Pique em zigue-zague", "Puxe para virar", "Arraste ao prato"). | Definido pelo dono do projeto em 2026-11-19 |

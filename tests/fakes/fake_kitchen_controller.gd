@@ -4,6 +4,7 @@ extends Node
 signal ticket_added(slot: int, ticket: TicketData)
 signal ticket_served(slot: int, ticket: TicketData, score: int, band: int, reply: String)
 signal gesture_feedback(quality: int, label: String, screen_pos: Vector2)
+signal action_hint(text: String, screen_pos: Vector2)
 
 ## Aproximadamente o trilho de bilhetes na captura 1280x720.
 var slot_positions: Array[Vector2] = [Vector2(930, 190), Vector2(1050, 190), Vector2(1170, 190)]

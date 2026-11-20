@@ -9,6 +9,8 @@ extends Node3D
 signal ticket_added(slot: int, ticket: TicketData)
 signal ticket_served(slot: int, ticket: TicketData, score: int, band: int, reply: String)
 signal gesture_feedback(quality: int, label: String, screen_pos: Vector2)
+## Dica da próxima ação (decisão 18); `text == ""` esconde. Só emite quando muda.
+signal action_hint(text: String, screen_pos: Vector2)
 
 const KITCHEN_SCENE := preload("res://scenes/kitchen/kitchen.tscn")
 const MODEL_PATH := "res://assets/models/kaykit/%s.gltf"
@@ -21,13 +23,23 @@ const RETURN_S := 0.25
 const PLATE_RETURN_S := 1.5
 const NEW_PLATE_S := 1.5
 const PLATE_SCALE := 1.25
-## Metros por "u" (altura da tela) na bancada, para o deslocamento visual da montagem.
-const U_TO_WORLD := 7.0
 ## Meia largura (m) do ingrediente na tábua, para as faixas de cobertura.
 const CHOP_HALF_WIDTH := 0.45
 const GLOW_S := 0.35
 const GLOW_COLOR := Color(1.0, 0.92, 0.55, 0.75)
 const SLOT_COUNT := 3
+## Altura (m) acima da estação onde a dica aponta.
+const HINT_LIFT := 0.4
+const HINT_DROP_BOARD := "Solte na tábua"
+const HINT_DROP_PAN := "Solte na panela"
+const HINT_DROP_PLATE := "Solte no prato"
+const HINT_CHOP := "Pique em zigue-zague ↕"
+const HINT_TO_PLATE := "Arraste para o prato"
+const HINT_FLIP := "Puxe para cima para virar"
+const HINT_PATTY_DONE := "No ponto! Tire para o prato"
+const HINT_BURNT := "Queimou! Tire da panela"
+const HINT_SERVE := "Arraste o prato até a janela"
+const HINT_IDLE := "Pegue um ingrediente nos caixotes"
 ## Cor/alfa da fumaça por Patty.Stage (alfa 0 = sem fumaça).
 const SMOKE_COLORS: Array[Color] = [
 	Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.3), Color(1, 1, 0.9, 0.45),
@@ -88,6 +100,9 @@ var _served_node: Node3D
 var _served_band: int = 0
 var _return_timer: float = -1.0
 var _new_plate_timer: float = -1.0
+var hint_text: String = ""
+var hint_pos := Vector2.ZERO
+var _crates_center := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -114,8 +129,15 @@ func _ready() -> void:
 	var scene_plate := _stations["Plate_Assembly"].get_node_or_null("Plate") as Node3D
 	if scene_plate:
 		scene_plate.visible = false
+	var n := 0
+	for key: String in _stations:
+		if key.begins_with("Crate_"):
+			_crates_center += snap_position(key)
+			n += 1
+	_crates_center /= maxf(n, 1)
 	_make_smoke()
 	_make_plate()
+	_update_hint()
 
 
 func _process(delta: float) -> void:
@@ -143,6 +165,7 @@ func start() -> void:
 		return
 	started = true
 	tickets.spawn()
+	_update_hint()
 
 
 func get_slot_screen_position(slot: int) -> Vector2:
@@ -167,6 +190,7 @@ func advance(delta: float) -> void:
 		_new_plate_timer -= delta
 		if _new_plate_timer < 0.0:
 			_make_plate()
+	_update_hint()
 
 
 # --- Entrada (p = 0–1 da viewport, y para baixo; t em ms) ---------------------
@@ -191,6 +215,7 @@ func pointer_down(p: Vector2, t_ms: int) -> void:
 			if patty != null:
 				mode = GestureRecognizer.Mode.PAN
 	recognizer.begin(mode, p, t_ms)
+	_update_hint()
 
 
 func pointer_move(p: Vector2, t_ms: int) -> void:
@@ -199,6 +224,7 @@ func pointer_move(p: Vector2, t_ms: int) -> void:
 	_handle_events(recognizer.add_sample(p, t_ms))
 	if _carry != null:
 		_follow(p)
+	_update_hint()
 
 
 func pointer_up(p: Vector2, t_ms: int) -> void:
@@ -214,6 +240,7 @@ func pointer_up(p: Vector2, t_ms: int) -> void:
 		_follow(p)
 		_drop(p)
 	_press_station = ""
+	_update_hint()
 
 
 ## Nome da estação (Area3D na camada 2) sob o ponto, ou "".
@@ -421,6 +448,7 @@ func _update_pan_visuals() -> void:
 
 
 func _assemble(c: Carry) -> void:
+	# A precisão da soltura vale só na nota; o visual fica centralizado (decisão 17).
 	var center := world_to_norm(snap_position("Plate_Assembly"))
 	var q := recognizer.drop_quality(center)
 	var off := recognizer.drop_offset_u(center)
@@ -435,10 +463,9 @@ func _assemble(c: Carry) -> void:
 		var area: Node3D = _stations["Plate_Assembly"]
 		_bun_top_node = _spawn(Kitchen.BUN_TOP, area)
 		_bun_top_node.position = area.to_local(bun_top_rest_position())
-	var o: Vector2 = item["offset"]
-	var local := Vector3(o.x * U_TO_WORLD, _stack_height, o.y * U_TO_WORLD)
-	_reparent_tween(node, plate_root, local)
-	node.rotation_degrees = Vector3(0, item["tilt_deg"], 0)
+	node.rotation = Vector3.ZERO
+	node.scale = Vector3.ONE
+	_reparent_tween(node, plate_root, Vector3(0, _stack_height, 0))
 	_stack_height += _height_of(item["id"], node)
 	_feedback(q, node)
 
@@ -671,7 +698,9 @@ func _crate_of(item_id: String) -> String:
 	return ""
 
 
-## Altura (m) do modelo para empilhar; medida uma vez por id.
+## Altura (m) do topo do modelo acima da sua origem (AABB), para empilhar; medida
+## uma vez por id. A origem dos modelos é o apoio: queijo e alface caem pelas bordas
+## abaixo dela (AABB com y < 0), então conta só o topo para não flutuar.
 func _height_of(id: String, node: Node3D) -> float:
 	if _heights.has(id):
 		return _heights[id]
@@ -682,6 +711,70 @@ func _height_of(id: String, node: Node3D) -> float:
 		var b: AABB = (inv * m.global_transform) * m.get_aabb()
 		box = b if first else box.merge(b)
 		first = false
-	var h := box.size.y if not first and box.size.y > 0.0 else 0.05
+	var h := box.end.y if not first and box.end.y > 0.0 else 0.05
 	_heights[id] = h
 	return h
+
+
+# --- Dica de ação (decisão 18) ---------------------------------------------------
+
+func _update_hint() -> void:
+	var text := ""
+	var station := ""
+	if _carry != null:
+		station = _carry_target(_carry)
+		match station:
+			"CuttingBoard": text = HINT_DROP_BOARD
+			"Stove_Pan": text = HINT_DROP_PAN
+			"Plate_Assembly": text = HINT_DROP_PLATE
+			"OrderWindow": text = HINT_SERVE
+	elif patty != null:
+		station = "Stove_Pan"
+		if patty.is_burnt():
+			text = HINT_BURNT
+		elif _side_ok(Patty.Side.A) and _side_ok(Patty.Side.B):
+			text = HINT_PATTY_DONE
+		else:
+			text = HINT_FLIP
+	elif board != null:
+		station = "CuttingBoard"
+		text = HINT_TO_PLATE if board.is_done() else HINT_CHOP
+	elif plate_root != null and not stack.is_empty():
+		station = "Plate_Assembly"
+		text = HINT_SERVE
+	elif tickets.open_count() > 0:
+		station = "Crates"
+		text = HINT_IDLE
+	var pos := Vector2.ZERO
+	if text != "":
+		pos = _camera.unproject_position(_hint_anchor(station) + Vector3(0, HINT_LIFT, 0))
+	if text == hint_text and pos.distance_squared_to(hint_pos) < 1.0:
+		return
+	hint_text = text
+	hint_pos = pos
+	action_hint.emit(text, pos)
+
+
+## Estação onde o item na mão deve ser solto ("" = nenhuma).
+func _carry_target(c: Carry) -> String:
+	if c.is_plate:
+		return "OrderWindow"
+	if c.chop == null and c.patty == null and recipe.chop.has(c.id):
+		return "CuttingBoard"
+	if c.patty == null and c.id == Kitchen.BURGER_UNCOOKED:
+		return "Stove_Pan"
+	if plate_root != null and stack.can_accept(c.id):
+		return "Plate_Assembly"
+	return ""
+
+
+func _hint_anchor(station: String) -> Vector3:
+	if station == "Crates":
+		return _crates_center
+	if station == "OrderWindow":
+		return snap_position(station) + Vector3(0, 0.6, 0)
+	return snap_position(station)
+
+
+func _side_ok(side: int) -> bool:
+	return Patty.quality_for_time(patty.side_time(side)) != Kitchen.Quality.CLUMSY

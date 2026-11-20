@@ -44,7 +44,7 @@ Entrada (todos): sequência de amostras `{p: Vector2 em 0–1 da viewport, t: ms
 
 **2.4 Montar** (soltar no `Plate_Assembly`)
 - Reconhece: arrastar (2.1) com item de receita, soltando sobre o prato.
-- Alinhamento: distância d entre o ponto de soltura e o centro do prato na tela. `perfeito` d ≤ 0,02 u; `bom` d ≤ 0,05 u; senão `desajeitado`. O item encaixa na pilha com deslocamento visual = d (limitado a 0,03 u) e giro aleatório de até 4°/12°/25° por faixa.
+- Alinhamento: distância d entre o ponto de soltura e o centro do prato na tela. `perfeito` d ≤ 0,02 u; `bom` d ≤ 0,05 u; senão `desajeitado`. O visual fica sempre centralizado no `Snap`, sem giro, cada item sobre o topo (AABB) do anterior (decisão 17); `PlateStack` ainda guarda `offset`/`tilt_deg`, sem uso visual.
 - Ordem: fora de ordem é aceito (empilha mesmo assim); conta como posição errada.
 - O pão de cima, quando colocado, fecha o hambúrguer.
 

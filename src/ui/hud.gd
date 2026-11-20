@@ -1,12 +1,13 @@
 extends CanvasLayer
 ## HUD da cozinha: bilhetes, bilhete-resposta e palavra de feedback.
 ## Fala com a cozinha só por sinais (contrato BRF-007): ticket_added, ticket_served,
-## gesture_feedback e get_slot_screen_position(slot).
+## gesture_feedback e get_slot_screen_position(slot); opcional action_hint(text, screen_pos) (BRF-011).
 ## O prato vai sempre para o bilhete mais antigo aberto (FIFO): ele ganha o destaque "próximo".
 ## Em telas baixas os bilhetes são ampliados para a frase ter ao menos min_phrase_px na tela.
 
 const TicketCardScene := preload("res://scenes/ui/ticket_card.tscn")
 const FeedbackWord := preload("res://src/ui/feedback_word.gd")
+const HintBubble := preload("res://src/ui/hint_bubble.gd")
 const GAP := 6.0
 const MARGIN := 8.0
 
@@ -33,9 +34,13 @@ static func ticket_scale_for(screen_scale: float, font_size: float, min_px: floa
 
 @onready var _tickets: Control = $Tickets
 @onready var _feedback: Control = $Feedback
+@onready var _hint: Control = $Hint
+var _bubble: PanelContainer
 
 
 func _ready() -> void:
+	_bubble = HintBubble.new()
+	_hint.add_child(_bubble)
 	get_viewport().size_changed.connect(_refresh_anchors)
 	_refresh_anchors()
 
@@ -43,9 +48,11 @@ func _ready() -> void:
 func bind(controller: Node) -> void:
 	unbind()
 	_controller = controller
-	controller.ticket_added.connect(_on_ticket_added)
-	controller.ticket_served.connect(_on_ticket_served)
-	controller.gesture_feedback.connect(_on_gesture_feedback)
+	controller.connect("ticket_added", _on_ticket_added)
+	controller.connect("ticket_served", _on_ticket_served)
+	controller.connect("gesture_feedback", _on_gesture_feedback)
+	if controller.has_signal("action_hint"):
+		controller.connect("action_hint", _on_action_hint)
 
 
 func unbind() -> void:
@@ -53,10 +60,16 @@ func unbind() -> void:
 		_controller = null
 		return
 	for pair in [["ticket_added", _on_ticket_added], ["ticket_served", _on_ticket_served],
-			["gesture_feedback", _on_gesture_feedback]]:
-		if _controller.is_connected(pair[0], pair[1]):
+			["gesture_feedback", _on_gesture_feedback], ["action_hint", _on_action_hint]]:
+		if _controller.has_signal(pair[0]) and _controller.is_connected(pair[0], pair[1]):
 			_controller.disconnect(pair[0], pair[1])
 	_controller = null
+	_bubble.hide_hint()
+
+
+## Balão de dica de ação.
+func get_hint() -> PanelContainer:
+	return _bubble
 
 
 ## Bilhete aberto no slot (ou null).
@@ -112,6 +125,10 @@ func _on_gesture_feedback(quality: int, label: String, screen_pos: Vector2) -> v
 	word.pop(label, quality, screen_pos)
 
 
+func _on_action_hint(text: String, screen_pos: Vector2) -> void:
+	_bubble.show_hint(text, screen_pos)
+
+
 func _new_card(slot: int, ticket: TicketData) -> Control:
 	var card := TicketCardScene.instantiate()
 	card.slot = slot
@@ -155,6 +172,7 @@ func _refresh_anchors() -> void:
 		var fs := float(_tickets.get_theme_font_size("font_size", "TicketPhrase"))
 		ui_scale = ticket_scale_for(_screen_scale(), fs, min_phrase_px, max_ui_scale)
 	_tickets.scale = Vector2.ONE * ui_scale
+	_bubble.ui_scale = ui_scale
 	_tickets.size = get_viewport().get_visible_rect().size / ui_scale
 	for card in _tickets.get_children():
 		card.compact = ui_scale > 1.0

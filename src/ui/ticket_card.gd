@@ -12,6 +12,12 @@ const NEXT_TEXT := "próximo"
 const NEXT_LIFT := 12.0
 ## Linhas da frase no modo compacto (telas baixas).
 const COMPACT_LINES := 2
+const RECIPE_PATH := "res://data/recipes/%s.json"
+## Lado dos ícones da receita (px lógicos do bilhete).
+const RECIPE_ICON := 26.0
+
+static var _recipe_cache := {}
+static var _trimmed_cache := {}
 
 var slot := -1
 var is_reply := false
@@ -53,6 +59,7 @@ var _full_phrase := ""
 @onready var _name: Label = %Name
 @onready var _phrase: Label = %Phrase
 @onready var _without: Label = %Without
+@onready var _recipe: HBoxContainer = %Recipe
 @onready var _stamp: Control = %Stamp
 
 
@@ -68,6 +75,7 @@ func show_ticket(ticket: TicketData) -> void:
 	var icon_path := ICON_PATH % ticket.recipe
 	_icon.texture = load(icon_path) if ResourceLoader.exists(icon_path) else null
 	_icon.visible = _icon.texture != null
+	_show_recipe(recipe_layers(ticket))
 	_without.visible = not ticket.without.is_empty()
 	if _without.visible:
 		_without.text = UiText.without_text(ticket.without)
@@ -99,6 +107,7 @@ func apply_reply(reply: String, band: int) -> void:
 	theme_type_variation = &"ReplyPanel"
 	_icon.visible = false
 	_without.visible = false
+	_recipe.visible = false
 	_phrase.text = reply
 	_stamp.band = band
 	_stamp.visible = true
@@ -135,6 +144,62 @@ func dismiss(duration := 0.4) -> void:
 	tw.tween_property(self, "modulate:a", 0.0, duration)
 	tw.tween_property(self, "float_offset", Vector2(0, -24), duration)
 	tw.chain().tween_callback(queue_free)
+
+
+## Ids das camadas pedidas, da base para o topo (ordem de montagem), sem as do `without`.
+static func recipe_layers(ticket: TicketData) -> Array[String]:
+	var recipe: Recipe = _recipe_cache.get(ticket.recipe)
+	if recipe == null:
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(RECIPE_PATH % ticket.recipe))
+		recipe = Recipe.from_dict(data if data is Dictionary else {})
+		_recipe_cache[ticket.recipe] = recipe
+	return recipe.requested_layers(ticket.without)
+
+
+## Ids mostrados na fileira de receita, na ordem (base -> topo, da esquerda para a direita).
+func recipe_ids() -> Array[String]:
+	var out: Array[String] = []
+	if _recipe.visible:
+		for icon in _recipe.get_children():
+			out.append(String(icon.get_meta("id")))
+	return out
+
+
+func _show_recipe(ids: Array[String]) -> void:
+	for old in _recipe.get_children():
+		old.free()
+	for id in ids:
+		var icon := TextureRect.new()
+		icon.texture = _trimmed_icon(id)
+		icon.custom_minimum_size = Vector2.ONE * RECIPE_ICON
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.tooltip_text = UiText.ingredient_name(id)
+		icon.set_meta("id", id)
+		_recipe.add_child(icon)
+	_recipe.visible = not ids.is_empty()
+
+
+## Ícone sem a margem transparente (as fatias são achatadas e somem num ícone pequeno).
+static func _trimmed_icon(id: String) -> Texture2D:
+	if _trimmed_cache.has(id):
+		return _trimmed_cache[id]
+	var path := ICON_PATH % id
+	var tex: Texture2D = load(path) if ResourceLoader.exists(path) else null
+	if tex != null:
+		var img := tex.get_image()
+		if img != null:
+			if img.is_compressed():
+				img.decompress()
+			var used := img.get_used_rect()
+			if used.has_area():
+				var atlas := AtlasTexture.new()
+				atlas.atlas = tex
+				atlas.region = Rect2(used)
+				tex = atlas
+	_trimmed_cache[id] = tex
+	return tex
 
 
 func phrase_label() -> Label:

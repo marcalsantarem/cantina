@@ -42,6 +42,53 @@ func test_without_hidden_when_empty() -> void:
 	assert_false(hud.get_card(1).without_label().visible)
 
 
+func test_ticket_shows_recipe_without_removed_items() -> void:
+	fake.ticket_added.emit(0, _ticket(["food_ingredient_tomato_slice", "food_ingredient_cheese_slice"]))
+	await wait_process_frames(2)
+	var card: Control = hud.get_card(0)
+	assert_eq(card.recipe_ids(), ["food_ingredient_bun_bottom", "food_ingredient_burger_cooked",
+			"food_ingredient_lettuce_slice", "food_ingredient_bun_top"] as Array[String], "base -> topo, sem o 'sem'")
+	assert_true(card.without_label().visible, "'sem' continua destacado")
+	fake.ticket_added.emit(1, _ticket())
+	await wait_process_frames(2)
+	assert_eq(hud.get_card(1).recipe_ids().size(), 6, "receita completa")
+	fake.ticket_served.emit(0, _ticket(), 90, 0, "ok")
+	await wait_seconds(0.4)
+	assert_eq(card.recipe_ids(), [] as Array[String], "resposta sem receita")
+
+
+func test_action_hint_shows_and_hides() -> void:
+	var bubble: Control = hud.get_hint()
+	assert_false(bubble.visible)
+	assert_eq(bubble.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	fake.action_hint.emit("Pique em zigue-zague", Vector2(1270, 400))
+	await wait_seconds(0.3)
+	assert_true(bubble.is_shown())
+	assert_eq(bubble.hint_text(), "Pique em zigue-zague")
+	assert_almost_eq(bubble.modulate.a, 1.0, 0.01, "fade in")
+	var vp := hud.get_viewport().get_visible_rect().size
+	var r: Rect2 = bubble.get_global_rect()
+	assert_true(r.position.x >= 0.0 and r.end.x <= vp.x, "preso à borda")
+	assert_true(r.end.y < 400.0, "acima do ponto")
+	var fs: int = bubble.get_child(0).get_theme_font_size("font_size")
+	assert_true(fs * hud.ui_scale >= 13.0, "texto >= 13 px")
+	fake.action_hint.emit("", Vector2.ZERO)
+	assert_false(bubble.is_shown())
+	await wait_seconds(0.3)
+	assert_false(bubble.visible, "fade out")
+
+
+func test_bind_without_action_hint_signal() -> void:
+	var plain := Node.new()
+	plain.add_user_signal("ticket_added")
+	plain.add_user_signal("ticket_served")
+	plain.add_user_signal("gesture_feedback")
+	add_child_autofree(plain)
+	hud.bind(plain)
+	hud.unbind()
+	assert_false(hud.get_hint().visible)
+
+
 func test_three_cards_do_not_overlap_and_stay_on_screen() -> void:
 	for i in 3:
 		fake.ticket_added.emit(i, _ticket())

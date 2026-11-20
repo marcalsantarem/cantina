@@ -12,3 +12,6 @@
 | T-008 | UI: toque para começar, bilhetes no trilho, bilhete-resposta, aviso de girar o celular (tam. M) | M1 | AG02 | feita |
 | T-009 | Validação do M1 e tag v0.1.0 (tam. P) | M1 | AG03 + AG00 | feita (passa com ressalvas → T-010) |
 | T-010 | Ressalvas do QA do M1: destaque do próximo bilhete e legibilidade em telas baixas (tam. P) | M1 | AG02 | feita |
+| T-011 | Bilhete mostra a receita esperada com ícones, sem os itens do "sem" (tam. P) | M1 | AG02 | feita |
+| T-012 | Prato montado sempre alinhado e centralizado (tam. P) | M1 | AG01 | feita |
+| T-013 | Dica de ação por ingrediente/estação: sinal na cozinha (AG01) e balão na UI (AG02) (tam. P) | M1 | AG01 + AG02 | feita |

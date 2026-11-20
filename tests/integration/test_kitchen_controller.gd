@@ -9,6 +9,7 @@ var t: int = 0
 var added: Array = []
 var served: Array = []
 var feedback: Array = []
+var hints: Array = []
 
 
 func before_each() -> void:
@@ -19,6 +20,8 @@ func before_each() -> void:
 	added.clear()
 	served.clear()
 	feedback.clear()
+	hints.clear()
+	ctrl.action_hint.connect(func(text, pos): hints.append([text, pos]))
 	ctrl.ticket_added.connect(func(slot, ticket): added.append([slot, ticket]))
 	ctrl.ticket_served.connect(func(slot, ticket, score, band, reply): served.append([slot, ticket, score, band, reply]))
 	ctrl.gesture_feedback.connect(func(q, label, pos): feedback.append([q, label, pos]))
@@ -68,6 +71,15 @@ func _labels() -> Array:
 	var out := []
 	for f in feedback:
 		out.append(f[1])
+	return out
+
+
+## Textos das dicas sem repetições seguidas.
+func _hint_texts() -> Array:
+	var out := []
+	for h in hints:
+		if out.is_empty() or out[-1] != h[0]:
+			out.append(h[0])
 	return out
 
 
@@ -138,6 +150,22 @@ func test_full_burger_served() -> void:
 	assert_true(ctrl.stack.closed)
 	assert_eq(ctrl.stack.ids(), ctrl.recipe.layers)
 
+	# Prato alinhado (decisão 17): itens centrados no Snap, sem giro, cada um no topo do anterior.
+	await wait_seconds(KitchenController.RETURN_S + 0.1)
+	var layers: Array[Node3D] = []
+	for ch in ctrl.plate_root.get_children():
+		if ch.name != "plate":
+			layers.append(ch)
+	assert_eq(layers.size(), ctrl.recipe.layers.size(), "camadas no prato")
+	var y := ctrl.snap_position("Plate_Assembly").y - ctrl.plate_root.global_position.y
+	for i in layers.size():
+		var n := layers[i]
+		assert_almost_eq(n.position.x, 0.0, 0.001, "%s x" % n.name)
+		assert_almost_eq(n.position.z, 0.0, 0.001, "%s z" % n.name)
+		assert_almost_eq(n.position.y, y, 0.001, "%s altura" % n.name)
+		assert_eq(n.rotation, Vector3.ZERO, "%s sem giro" % n.name)
+		y += ctrl._heights[ctrl.recipe.layers[i]]
+
 	# Servir na janela.
 	_drag(_plate(), _n(ctrl.snap_position("OrderWindow") + Vector3(0, 0.6, 0)))
 	assert_eq(served.size(), 1)
@@ -157,3 +185,35 @@ func test_full_burger_served() -> void:
 	ctrl.pointer_down(_n(ctrl.snap_position("OrderWindow") + Vector3(0, 0.6, 0)), t)
 	ctrl.pointer_up(_n(ctrl.snap_position("OrderWindow") + Vector3(0, 0.6, 0)), t + 50)
 	assert_null(ctrl.returned_plate, "some ao tocar")
+
+	var cut_hints := ["Solte na tábua", "Pique em zigue-zague ↕", "Arraste para o prato", "Solte no prato", "Arraste o prato até a janela"]
+	var expected := ["Pegue um ingrediente nos caixotes",
+		"Solte no prato", "Arraste o prato até a janela",
+		"Solte na panela", "Puxe para cima para virar", "No ponto! Tire para o prato",
+		"Solte no prato", "Arraste o prato até a janela",
+		"Solte no prato", "Arraste o prato até a janela"]
+	expected.append_array(cut_hints)
+	expected.append_array(cut_hints)
+	expected.append_array(["Solte no prato", "Arraste o prato até a janela"])
+	assert_eq(_hint_texts().slice(0, expected.size()), expected, "sequência de dicas")
+
+
+func test_hint_positions_and_no_repeat() -> void:
+	ctrl.start()
+	assert_eq(hints.size(), 1)
+	var crate := _n(ctrl.snap_position("Crate_burger"))
+	var pan := _n(ctrl.snap_position("Stove_Pan"))
+	ctrl.pointer_down(crate, t)
+	for i in range(1, 13):
+		t += 16
+		ctrl.pointer_move(crate.lerp(pan, i / 12.0), t)
+	assert_eq(hints[-1][0], "Solte na panela")
+	var n := hints.size()
+	ctrl.advance(0.1)
+	ctrl.advance(0.1)
+	assert_eq(hints.size(), n, "não repete a mesma dica")
+	var pan_px: Vector2 = ctrl.world_to_norm(ctrl.snap_position("Stove_Pan") + Vector3(0, KitchenController.HINT_LIFT, 0)) * ctrl._viewport_size()
+	assert_almost_eq(hints[-1][1], pan_px, Vector2.ONE, "dica na panela")
+	t += 16
+	ctrl.pointer_up(pan, t)
+	assert_eq(hints[-1][0], "Puxe para cima para virar")
