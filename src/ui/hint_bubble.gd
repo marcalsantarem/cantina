@@ -2,12 +2,17 @@ extends PanelContainer
 ## Balão de dica de ação (decisão 18): creme, perto de screen_pos, preso à borda da tela.
 ## show_hint("") esconde com fade. Não recebe toque/mouse.
 ## Não cobre `avoid` (ex.: a fita "próximo"): desvia para o lado ou, se não der, para baixo do ponto.
+## Também deixa livre a coluna acima do alvo (fumaça da frigideira/panela, aro): fica ao lado dela,
+## com o rabicho inclinado para o alvo (T-027).
 
 const MARGIN := 8.0
 ## Distância (px lógicos do balão) entre screen_pos e a ponta do balão.
 const GAP := 26.0
 const TAIL := 9.0
 const FADE := 0.18
+## Coluna livre acima de screen_pos (px lógicos de tela): largura e quanto desce abaixo do ponto.
+const COLUMN_W := 120.0
+const COLUMN_BELOW := 70.0
 
 ## Ampliação do balão (mesma do HUD em telas baixas).
 var ui_scale := 1.0:
@@ -120,9 +125,17 @@ func _clamped(p: Vector2, s: Vector2, area: Vector2) -> Vector2:
 			clampf(p.y, MARGIN, maxf(MARGIN, area.y - s.y - MARGIN)))
 
 
-## Primeiro retângulo de `avoid` coberto pelo balão em p (ou vazio).
+## Coluna acima do alvo que o balão deixa livre.
+func column_rect() -> Rect2:
+	return Rect2(_target.x - COLUMN_W * 0.5, 0.0, COLUMN_W, _target.y + COLUMN_BELOW)
+
+
+## Primeiro retângulo (`avoid` ou a coluna do alvo) coberto pelo balão em p (ou vazio).
 func _hit(p: Vector2, s: Vector2) -> Rect2:
 	var r := Rect2(p, s)
+	var col := column_rect()
+	if r.intersects(col):
+		return col
 	for a in avoid:
 		if a.has_area() and r.intersects(a):
 			return a
@@ -138,10 +151,12 @@ func screen_rect() -> Rect2:
 func _draw() -> void:
 	var col := get_theme_stylebox("panel", "HintBubble")
 	var bg: Color = col.bg_color if col is StyleBoxFlat else Color.WHITE
-	var tip_x := clampf((_target.x - position.x) / ui_scale, 18.0, size.x - 18.0)
-	var pts: PackedVector2Array
-	if _below:
-		pts = [Vector2(tip_x - TAIL, 1), Vector2(tip_x + TAIL, 1), Vector2(tip_x, -TAIL)]
-	else:
-		pts = [Vector2(tip_x - TAIL, size.y - 1), Vector2(tip_x + TAIL, size.y - 1), Vector2(tip_x, size.y + TAIL)]
-	draw_colored_polygon(pts, bg)
+	var local := (_target - position) / ui_scale
+	var base_x := clampf(local.x, 18.0, size.x - 18.0)
+	var base_y := 1.0 if _below else size.y - 1.0
+	# ponta inclinada para o alvo quando o balão está ao lado da coluna.
+	var dir := (local - Vector2(base_x, base_y)).normalized()
+	if dir == Vector2.ZERO or (dir.y > 0.0) == _below:
+		dir = Vector2(0, -1 if _below else 1)
+	var tip := Vector2(base_x, base_y) + dir * TAIL * 1.6
+	draw_colored_polygon(PackedVector2Array([Vector2(base_x - TAIL, base_y), Vector2(base_x + TAIL, base_y), tip]), bg)

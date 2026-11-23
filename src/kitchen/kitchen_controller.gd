@@ -63,6 +63,7 @@ const HINT_DROP_POT := "Solte os legumes na panela"
 const HINT_TO_PLATE := "Arraste ao prato"
 const HINT_TO_POT := "Arraste à panela"
 const HINT_PATTY_DONE := "Tire no ponto!"
+const HINT_PATTY_HURRY := "Tire já!"
 const HINT_BURNT := "Queimou! Tire da frigideira"
 const HINT_SERVE := "Arraste o prato até a janela"
 const HINT_SERVE_BOWL := "Arraste a tigela à janela"
@@ -119,6 +120,10 @@ var clock: ShiftClock
 var tickets: TicketQueue
 var scorer: DishScorer
 var replies: ReplyPicker
+## Sorteador de frases compartilhado entre turnos ("Jogar de novo" recria a cozinha):
+## o saco sem repetição e a frase do dia anterior sobrevivem ao turno.
+static var shared_replies: ReplyPicker
+static var last_best_reply: String = ""
 var recognizer: GestureRecognizer
 var stack: PlateStack
 var pot: StewPot
@@ -192,7 +197,9 @@ func _ready() -> void:
 	tickets.max_open = TicketQueue.RAIL_SLOTS
 	tickets.ticket_arrived.connect(_on_ticket_arrived)
 	scorer = DishScorer.new(recipe)
-	replies = ReplyPicker.new()
+	if shared_replies == null:
+		shared_replies = ReplyPicker.new()
+	replies = shared_replies
 	recognizer = GestureRecognizer.new()
 	stack = PlateStack.new(recipe)
 	pot = StewPot.new(stew_recipe)
@@ -308,7 +315,9 @@ func advance(delta: float) -> void:
 		if _end_timer >= 0.0:
 			_end_timer -= delta
 			if _end_timer < 0.0:
-				shift_ended.emit(ShiftScorer.summarize(shift_tickets, clock.held_arrivals))
+				var summary := ShiftScorer.summarize(shift_tickets, clock.held_arrivals, last_best_reply)
+				last_best_reply = summary["best_reply"]
+				shift_ended.emit(summary)
 		return
 	if started:
 		var ev := clock.tick(delta, tickets.open_count())
@@ -1099,14 +1108,16 @@ func _update_hint() -> void:
 		var pst := pot.stage()
 		var burnt_pan := ""
 		var done_pan := ""
+		var done_stage := -1
 		for pan in pans:
 			if pan.patty == null:
 				continue
 			if pan.patty.is_burnt():
 				if burnt_pan == "":
 					burnt_pan = pan.station
-			elif pan.patty.is_cooked() and done_pan == "":
+			elif pan.patty.stage() >= Patty.Stage.GLOW and pan.patty.stage() > done_stage:
 				done_pan = pan.station
+				done_stage = pan.patty.stage()
 		if burnt_pan != "":
 			station = burnt_pan
 			text = HINT_BURNT
@@ -1118,7 +1129,8 @@ func _update_hint() -> void:
 			text = HINT_SERVE_BOWL
 		elif done_pan != "":
 			station = done_pan
-			text = HINT_PATTY_DONE
+			# Dica só na janela de perfeito (10–14 s); passando do ponto, "Tire já!".
+			text = HINT_PATTY_HURRY if done_stage == Patty.Stage.SMOKE else HINT_PATTY_DONE
 		elif pst == StewPot.Stage.READY:
 			station = POT_STATION
 			text = HINT_SERVE_BOWL

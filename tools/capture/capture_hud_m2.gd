@@ -1,5 +1,7 @@
 # Captura da HUD do M2 (BRF-016) em docs/capturas/hud_m2_<cena>_<L>x<A>.png:
 # bilhetes (2 itens, "sem X" por item, entrega, humor e dica na panela), placa, pausa e fim de turno.
+# "alto" (T-027): o bilhete mais alto (2 itens + "sem queijo" + faminto) é o "próximo" e não desce
+# sobre caixotes/tábua; a dica na frigideira fica ao lado da coluna acima dela (fumaça).
 # A escala dos bilhetes segue a regra do HUD (px de CSS, DPR 1): em 844x390 os bilhetes ampliam.
 # Cozinha real (kitchen.tscn) ao fundo + controlador falso com as vagas projetadas da cena.
 # Uso (COM janela, nao headless):
@@ -12,7 +14,7 @@ const Fake := preload("res://tests/fakes/fake_kitchen_controller.gd")
 const OUT_DIR := "res://docs/capturas/"
 ## Tamanho da tela -> tamanho logico (stretch canvas_items + expand com base 1280x720).
 const SIZES := [Vector2i(1280, 720), Vector2i(844, 390)]
-const SHOTS := ["bilhetes", "placa", "pausa", "fim"]
+const SHOTS := ["bilhetes", "alto", "placa", "pausa", "fim"]
 const Hud := preload("res://src/ui/hud.gd")
 
 
@@ -63,6 +65,7 @@ func _capture(size: Vector2i, shot: String) -> void:
 	hud.bind(fake)
 
 	var combo := Fake.make_multi_ticket(1, "Seu Jorge", "Um de cada, chef! Tô com pressa.", ["food_burger", "food_stew"] as Array[String])
+	combo.items[0]["without"] = ["food_ingredient_cheese_slice"]
 	var burger := Fake.make_ticket(2, "Dona Cida", "Sem tomate, por favor, é sério.", ["food_ingredient_tomato_slice"] as Array[String])
 	burger.add_item("food_burger", ["food_ingredient_tomato_slice"])
 	var stew := Fake.make_multi_ticket(3, "Lia", "Um ensopadinho quente.", ["food_stew"] as Array[String])
@@ -77,8 +80,13 @@ func _capture(size: Vector2i, shot: String) -> void:
 	fake.ticket_mood_changed.emit(0, 2)  # faminto
 	fake.ticket_mood_changed.emit(1, 1)  # impaciente
 	fake.ticket_item_delivered.emit(3, two, 0)
-	var pot := kitchen.get_node("Stations/Stove_Pot") as Node3D
-	fake.action_hint.emit("Mexa em círculos", cam.unproject_position(pot.global_position + Vector3(0, 0.4, 0)) * to_logical)
+	if shot == "alto":
+		fake.delivery_target_changed.emit(0)
+		var pan := kitchen.get_node("Stations/Stove_Pan2/Snap") as Node3D
+		fake.action_hint.emit("Queimou! Tire da frigideira", cam.unproject_position(pan.global_position + Vector3(0, 0.4, 0)) * to_logical)
+	else:
+		var pot := kitchen.get_node("Stations/Stove_Pot") as Node3D
+		fake.action_hint.emit("Mexa em círculos", cam.unproject_position(pot.global_position + Vector3(0, 0.4, 0)) * to_logical)
 	await create_timer(0.4).timeout
 	if shot == "placa":
 		fake.shift_phase_changed.emit(1)

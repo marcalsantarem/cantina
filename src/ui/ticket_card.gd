@@ -11,6 +11,10 @@ const CLIP_COLOR := Color("#9ea8ad")
 const NEXT_COLOR := Color("#c76b45")
 const NEXT_TEXT := "próximo"
 const NEXT_LIFT := 12.0
+## Espaço reservado abaixo do bilhete para a fita "próximo" (px do bilhete).
+const NEXT_TAG_SPACE := 18.0
+## Menor redução de um bilhete alto demais para a faixa (G1 do QA do cozinhar simples).
+const MIN_FIT := 0.6
 ## Linhas da frase no modo compacto (telas baixas): 1 linha com reticências (M5 do QA M2).
 const COMPACT_LINES := 1
 const RECIPE_PATH := "res://data/recipes/%s.json"
@@ -47,6 +51,19 @@ var float_offset := Vector2.ZERO:
 	set(v):
 		float_offset = v
 		_place()
+## Limite inferior (coordenadas do pai) da faixa dos bilhetes, fita "próximo" inclusa: o bilhete
+## alto demais sobe e, se ainda não couber, encolhe; nunca desce sobre os caixotes e a tábua.
+var max_bottom := INF:
+	set(v):
+		max_bottom = v
+		_place()
+## Redução aplicada para caber na faixa (1 = tamanho normal).
+var fit := 1.0
+## Escala das animações (entrada, virada da resposta); a escala real é pop * fit.
+var pop := Vector2.ONE:
+	set(v):
+		pop = v
+		scale = pop * fit
 ## Bilhete mais antigo aberto: é ele que recebe o próximo prato.
 var is_next := false:
 	set(v):
@@ -116,20 +133,20 @@ func show_ticket(ticket: TicketData) -> void:
 	_hungry.text = UiText.HUNGRY_LINE
 	_stamp.visible = false
 	modulate.a = 0.0
-	scale = Vector2(0.85, 0.85)
+	pop = Vector2(0.85, 0.85)
 	float_offset = Vector2(0, -36)
 	var tw := create_tween().set_parallel()
 	tw.tween_property(self, "modulate:a", 1.0, 0.25)
-	tw.tween_property(self, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "pop", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "float_offset", Vector2.ZERO, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func show_reply(reply: String, band: int) -> void:
 	is_reply = true
 	var tw := create_tween()
-	tw.tween_property(self, "scale:x", 0.0, 0.15).set_ease(Tween.EASE_IN)
+	tw.tween_property(self, "pop:x", 0.0, 0.15).set_ease(Tween.EASE_IN)
 	tw.tween_callback(apply_reply.bind(reply, band))
-	tw.tween_property(self, "scale:x", 1.0, 0.18).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "pop:x", 1.0, 0.18).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_stamp, "modulate:a", 1.0, 0.08)
 	tw.parallel().tween_property(_stamp, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK)
 
@@ -409,8 +426,15 @@ func _place() -> void:
 	var area := get_parent_area_size()
 	var p := anchor_point + layout_shift + float_offset - Vector2(size.x * 0.5, size.y - RAIL_OVERLAP)
 	p.x = clampf(p.x, MARGIN, maxf(MARGIN, area.x - size.x - MARGIN))
-	p.y = maxf(maxf(p.y, MARGIN) - next_lift, 0.0)
+	# faixa dos bilhetes: sobe o que passar de max_bottom; se ainda não couber, encolhe (pivô no centro).
+	var h := size.y + NEXT_TAG_SPACE
+	var top := maxf(minf(p.y, max_bottom - h), MARGIN)
+	fit = 1.0
+	if size.y > 0.0 and top + h > max_bottom:
+		fit = clampf((max_bottom - top) / h, MIN_FIT, 1.0)
+	p.y = maxf(top - next_lift, 0.0) - size.y * 0.5 * (1.0 - fit)
 	position = p
+	scale = pop * fit
 
 
 func _draw() -> void:

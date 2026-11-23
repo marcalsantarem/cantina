@@ -44,3 +44,19 @@ func test_no_immediate_repeat() -> void:
 		var text := picker.pick(DishScorer.Band.POOR)
 		assert_ne(text, last)
 		last = text
+
+
+func test_no_repeat_until_pool_exhausted() -> void:
+	# QA T-026 M3: sorteio sem repetição até esgotar o pool (e sem repetir na virada).
+	var pool: Array = picker.bands["great"]
+	var last := ""
+	for round in 3:
+		var seen := {}
+		for i in pool.size():
+			var text := picker.pick(DishScorer.Band.GREAT)
+			assert_false(seen.has(text), "repetiu antes de esgotar: " + text)
+			assert_ne(text, last, "repetiu na virada do saco")
+			seen[text] = true
+			last = text
+		assert_eq(seen.size(), pool.size())
+

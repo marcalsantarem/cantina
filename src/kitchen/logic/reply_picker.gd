@@ -1,7 +1,9 @@
 class_name ReplyPicker
 extends RefCounted
 ## Frase do bilhete-resposta (design §4): sorteia da faixa e, se houver gancho para o
-## erro dominante, acrescenta-o ("<frase da faixa> <gancho>"). Evita repetir a última.
+## erro dominante, acrescenta-o ("<frase da faixa> <gancho>"). Sorteio sem repetição
+## (saco por faixa/gancho): só repete depois de esgotar o pool, e nunca a última seguida.
+## O controle reaproveita a mesma instância entre turnos (`KitchenController.shared_replies`).
 ## M2 (m2_turno §3, §5): `pick_ticket` usa a nota do bilhete, o gancho do pior item ou
 ## o de demora; frases de faixa por receita em `recipe_bands` (cai em `bands`).
 
@@ -13,6 +15,8 @@ var rng: RandomNumberGenerator
 var bands: Dictionary = {}
 var hooks: Dictionary = {}
 var recipe_bands: Dictionary = {}
+## Índices ainda não sorteados por chave (saco) e último sorteado por chave.
+var _bags: Dictionary = {}
 var _last: Dictionary = {}
 
 
@@ -72,8 +76,24 @@ func has_hook(dominant: String) -> bool:
 func _draw(key: String, pool: Array) -> String:
 	if pool.is_empty():
 		return ""
-	var i := rng.randi_range(0, pool.size() - 1)
-	if pool.size() > 1 and i == _last.get(key, -1):
-		i = (i + 1) % pool.size()
+	var bag: Array = _bags.get(key, [])
+	if bag.is_empty() or int(bag.max()) >= pool.size():
+		bag = _refill(pool.size(), int(_last.get(key, -1)))
+		_bags[key] = bag
+	var i: int = bag.pop_back()
 	_last[key] = i
 	return pool[i]
+
+
+## Saco novo embaralhado (Fisher-Yates com `rng`); o próximo a sair não é `last`.
+func _refill(n: int, last: int) -> Array:
+	var bag: Array = range(n)
+	for k in range(n - 1, 0, -1):
+		var j := rng.randi_range(0, k)
+		var tmp: int = bag[k]
+		bag[k] = bag[j]
+		bag[j] = tmp
+	if n > 1 and bag[n - 1] == last:
+		bag[n - 1] = bag[0]
+		bag[0] = last
+	return bag

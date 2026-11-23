@@ -234,8 +234,12 @@ func test_hint_positions_and_no_repeat() -> void:
 	t += 16
 	ctrl.pointer_up(pan, t)
 	assert_eq(hints[-1][0], "Pegue um ingrediente nos caixotes", "carne crua cozinha sozinha")
-	ctrl.advance(8.0)
-	assert_eq(hints[-1][0], "Tire no ponto!")
+	ctrl.advance(8.5)
+	assert_eq(hints[-1][0], "Pegue um ingrediente nos caixotes", "no ponto (8 s) ainda não pede para tirar")
+	ctrl.advance(1.6)
+	assert_eq(hints[-1][0], "Tire no ponto!", "só na janela de perfeito (10 s)")
+	ctrl.advance(4.0)
+	assert_eq(hints[-1][0], "Tire já!", "passando do ponto (14 s)")
 
 
 func test_two_pans_independent() -> void:

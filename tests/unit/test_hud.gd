@@ -502,3 +502,35 @@ func test_main_replay_restarts_without_start_screen() -> void:
 	assert_false(main.has_node("StartScreen"), "não volta à tela inicial")
 	main.game.ticket_added.emit(0, _ticket())
 	assert_eq(main.hud.get_cards().size(), 1, "HUD novo ligado ao jogo novo")
+
+
+# --- T-027 (BRF-023) ----------------------------------------------------------
+
+func test_tall_next_card_stays_in_ticket_band() -> void:
+	var vp := hud.get_viewport().get_visible_rect().size
+	hud.ticket_band_bottom = 300.0 / vp.y  # faixa de 844x390 (lógico 1558x720) com a janela headless
+	hud.set_ui_scale(1.97)
+	var t := _combo()
+	t.items[0]["without"] = ["food_ingredient_cheese_slice"]
+	fake.ticket_added.emit(0, t)
+	fake.ticket_added.emit(1, _ticket())
+	fake.ticket_mood_changed.emit(0, 2)  # faminto: + 1 linha
+	await wait_seconds(0.7)
+	var card: Control = hud.get_card(0)
+	assert_true(card.is_next)
+	var tag: Rect2 = card.next_tag_screen_rect()
+	assert_true(tag.end.y <= 300.0 + 4.0, "fita 'próximo' (e o bilhete) acima dos caixotes: %s" % tag.end.y)
+	assert_true(card.fit < 1.0 and card.fit >= card.MIN_FIT, "encolhe só o necessário: %s" % card.fit)
+	assert_true(card.get_global_transform().origin.y >= -8.0, "na tela")
+	assert_eq(hud.get_card(1).fit, 1.0, "bilhete baixo não encolhe")
+
+
+func test_hint_bubble_beside_target_column() -> void:
+	var target := Vector2(640, 420)
+	fake.action_hint.emit("Queimou! Tire da frigideira", target)
+	await wait_seconds(0.3)
+	var bubble: Control = hud.get_hint()
+	var r: Rect2 = bubble.screen_rect()
+	assert_false(r.intersects(Rect2(target.x - 40.0, 0.0, 80.0, target.y + 20.0)), "fumaça/aro livres")
+	assert_true(r.end.y < target.y, "acima do ponto")
+	assert_true(Rect2(Vector2.ZERO, hud.get_viewport().get_visible_rect().size).encloses(r), "na tela")

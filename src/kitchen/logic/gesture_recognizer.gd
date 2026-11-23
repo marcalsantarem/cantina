@@ -70,10 +70,5 @@ func last_point() -> Vector2:
 	return _last_p
 
 
-## Deslocamento desde o início, em u.
-func displacement_u() -> float:
-	return distance_u(_start_p, _last_p, aspect)
-
-
 static func distance_u(a: Vector2, b: Vector2, aspect_ratio: float) -> float:
 	return Vector2((a.x - b.x) * aspect_ratio, a.y - b.y).length()

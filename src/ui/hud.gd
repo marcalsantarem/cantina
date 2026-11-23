@@ -44,6 +44,10 @@ const OPTIONAL_SIGNALS := {
 const COMPACT_SCALE := 1.2
 ## Ampliação máxima dos bilhetes.
 @export var max_ui_scale := 2.0
+## Fundo da faixa dos bilhetes (fração da altura visível; fita "próximo" inclusa): abaixo dela ficam
+## os caixotes e a tábua (G1 do QA do cozinhar simples). A câmera mantém a altura, então a fração vale
+## em qualquer proporção de tela.
+@export var ticket_band_bottom := 0.42
 
 ## Escala aplicada aos bilhetes (1 = tamanho de projeto).
 var ui_scale := 1.0
@@ -281,6 +285,7 @@ func _new_card(slot: int, ticket: TicketData) -> Control:
 	var card := TicketCardScene.instantiate()
 	card.slot = slot
 	card.compact = ui_scale >= COMPACT_SCALE
+	card.max_bottom = _band_bottom()
 	_tickets.add_child(card)
 	card.resized.connect(_layout)
 	card.tree_exited.connect(_layout)
@@ -328,8 +333,14 @@ func _refresh_anchors() -> void:
 	_tickets.size = get_viewport().get_visible_rect().size / ui_scale
 	for card in _tickets.get_children():
 		card.compact = ui_scale >= COMPACT_SCALE
+		card.max_bottom = _band_bottom()
 		card.anchor_point = _slot_pos(card.slot)
 	_layout()
+
+
+## Fundo da faixa dos bilhetes nas coordenadas (escaladas) de _tickets.
+func _band_bottom() -> float:
+	return get_viewport().get_visible_rect().size.y * ticket_band_bottom / ui_scale
 
 
 ## Afasta bilhetes vizinhos para não se sobreporem e mantém o grupo dentro da tela.

@@ -88,7 +88,9 @@ static func agility_word(g: float) -> String:
 ## chegaram (`ShiftClock.held_arrivals`): entram no denominador de A (ficar parado não
 ## encolhe a régua). Retorna {score, stars, quality, service, agility, served, arrived,
 ## items_delivered, items_total, items_held, avg_score, agility_word, best_reply}.
-static func summarize(tickets: Array, held_items: int = 0) -> Dictionary:
+## `avoid_reply` = frase do dia do turno anterior: escolhe a melhor frase diferente dela
+## (só repete se for a única).
+static func summarize(tickets: Array, held_items: int = 0, avoid_reply: String = "") -> Dictionary:
 	var served := 0
 	var q_sum := 0.0
 	var g_sum := 0.0
@@ -96,6 +98,8 @@ static func summarize(tickets: Array, held_items: int = 0) -> Dictionary:
 	var items_delivered := 0
 	var best: TicketData = null
 	var best_g := -1.0
+	var alt: TicketData = null
+	var alt_g := -1.0
 	for t: TicketData in tickets:
 		t.ensure_items()
 		items_total += t.item_count()
@@ -106,10 +110,17 @@ static func summarize(tickets: Array, held_items: int = 0) -> Dictionary:
 		var g := agility(t.wait_s(t.completed_s), t.item_count())
 		q_sum += t.score()
 		g_sum += g
-		if t.reply != "" and (best == null or t.score() > best.score() \
-				or (t.score() == best.score() and g > best_g)):
+		if t.reply == "":
+			continue
+		if avoid_reply != "" and t.reply == avoid_reply:
+			if alt == null or t.score() > alt.score() or (t.score() == alt.score() and g > alt_g):
+				alt = t
+				alt_g = g
+		elif best == null or t.score() > best.score() or (t.score() == best.score() and g > best_g):
 			best = t
 			best_g = g
+	if best == null:
+		best = alt
 	var q := 0.0 if served == 0 else q_sum / served
 	var g_pct := 0.0 if served == 0 else 100.0 * g_sum / served
 	var a_total := items_total + maxi(held_items, 0)

@@ -101,3 +101,12 @@ func test_summarize_empty_day() -> void:
 	assert_eq(r["stars"], 1)
 	assert_eq(r["best_reply"], "")
 	assert_eq(r["agility_word"], "Sem pressa")
+
+
+func test_best_reply_avoids_previous_day() -> void:
+	# QA T-026 M3: a frase do dia não repete a do turno anterior (se houver outra).
+	var t1 := _ticket([90], 0.0, 30.0, "A")
+	var t3 := _ticket([60], 20.0, 80.0, "B")
+	assert_eq(ShiftScorer.summarize([t1, t3], 0, "A")["best_reply"], "B", "evita a de ontem")
+	assert_eq(ShiftScorer.summarize([t1], 0, "A")["best_reply"], "A", "única: repete")
+	assert_eq(ShiftScorer.summarize([t1, t3], 0, "B")["best_reply"], "A")
