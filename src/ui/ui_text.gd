@@ -8,6 +8,7 @@ const ROTATE_HINT := "Gire o celular"
 const WITHOUT := "sem %s"
 const HUNGRY_LINE := "Tô com fome, chef!"
 const IMPATIENT_STAMP := "…"
+const PAUSED := "Pausado — toque para voltar"
 ## Placas do turno por `ShiftClock.Phase` (vazio = sem placa).
 const PHASE_BANNERS: Array[String] = ["", "Hora do almoço!", "", "Últimos pedidos", "Fechado!"]
 const END_TITLE := "Fim do turno"

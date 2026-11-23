@@ -9,6 +9,8 @@ signal ticket_item_delivered(slot: int, ticket: TicketData, item_index: int)
 signal ticket_mood_changed(slot: int, mood: int)
 signal shift_phase_changed(phase: int)
 signal shift_ended(summary: Dictionary)
+signal pause_changed(paused: bool)
+signal delivery_target_changed(slot: int)
 
 ## Aproximadamente o trilho de bilhetes na captura 1280x720.
 var slot_positions: Array[Vector2] = [Vector2(900, 190), Vector2(1010, 190), Vector2(1120, 190), Vector2(1230, 190)]

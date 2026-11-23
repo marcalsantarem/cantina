@@ -1,6 +1,7 @@
 extends PanelContainer
 ## Balão de dica de ação (decisão 18): creme, perto de screen_pos, preso à borda da tela.
 ## show_hint("") esconde com fade. Não recebe toque/mouse.
+## Não cobre `avoid` (ex.: a fita "próximo"): desvia para o lado ou, se não der, para baixo do ponto.
 
 const MARGIN := 8.0
 ## Distância (px lógicos do balão) entre screen_pos e a ponta do balão.
@@ -14,6 +15,13 @@ var ui_scale := 1.0:
 		ui_scale = v
 		scale = Vector2.ONE * v
 		_place()
+
+## Retângulos de tela que o balão não deve cobrir.
+var avoid: Array[Rect2] = []:
+	set(v):
+		avoid = v
+		if visible:
+			_place()
 
 var _target := Vector2.ZERO
 var _below := false
@@ -86,11 +94,44 @@ func _place() -> void:
 	var s := size * ui_scale
 	var lift := (GAP + TAIL) * ui_scale
 	_below = _target.y - lift - s.y < MARGIN
-	var p := Vector2(_target.x - s.x * 0.5, _target.y + lift if _below else _target.y - lift - s.y)
-	p.x = clampf(p.x, MARGIN, maxf(MARGIN, area.x - s.x - MARGIN))
-	p.y = clampf(p.y, MARGIN, maxf(MARGIN, area.y - s.y - MARGIN))
+	var p := _clamped(Vector2(_target.x - s.x * 0.5, _target.y + lift if _below else _target.y - lift - s.y), s, area)
+	var hit := _hit(p, s)
+	if hit.has_area():
+		# desvia para o lado mais perto; se ainda cobrir, vai para baixo do ponto.
+		var left := _clamped(Vector2(hit.position.x - s.x - MARGIN, p.y), s, area)
+		var right := _clamped(Vector2(hit.end.x + MARGIN, p.y), s, area)
+		var side := left if absf(left.x - p.x) <= absf(right.x - p.x) else right
+		var other := right if side == left else left
+		if not _hit(side, s).has_area():
+			p = side
+		elif not _hit(other, s).has_area():
+			p = other
+		elif not _below:
+			var under := _clamped(Vector2(p.x, _target.y + lift), s, area)
+			if not _hit(under, s).has_area():
+				_below = true
+				p = under
 	position = p
 	queue_redraw()
+
+
+func _clamped(p: Vector2, s: Vector2, area: Vector2) -> Vector2:
+	return Vector2(clampf(p.x, MARGIN, maxf(MARGIN, area.x - s.x - MARGIN)),
+			clampf(p.y, MARGIN, maxf(MARGIN, area.y - s.y - MARGIN)))
+
+
+## Primeiro retângulo de `avoid` coberto pelo balão em p (ou vazio).
+func _hit(p: Vector2, s: Vector2) -> Rect2:
+	var r := Rect2(p, s)
+	for a in avoid:
+		if a.has_area() and r.intersects(a):
+			return a
+	return Rect2()
+
+
+## Retângulo do balão na tela.
+func screen_rect() -> Rect2:
+	return Rect2(position, size * ui_scale)
 
 
 ## Rabicho apontando para screen_pos.

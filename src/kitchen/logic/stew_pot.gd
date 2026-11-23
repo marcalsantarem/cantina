@@ -9,7 +9,9 @@ enum Stage { EMPTY, FILLING, COOKING, READY, STICKING, SCORCHING, BURNT }
 const READY_S := 18.0
 ## Grude por segundo sem mexer: cozinhando e depois de pronto.
 const STICK_PER_S_COOKING := 1.0 / 14.0
-const STICK_PER_S_READY := 1.0 / 10.0
+const STICK_PER_S_READY := 1.0 / 18.0
+## Logo depois de pronto, o grude não sobe por isto (descanso, B3 do QA M2).
+const READY_REST_S := 6.0
 ## Cada volta de mexer tira isto de g.
 const STIR_RELIEF := 0.35
 const STICKING_G := 0.6
@@ -125,8 +127,12 @@ func tick(delta_s: float) -> bool:
 	if portions == 0 or stick >= 1.0 or delta_s <= 0.0:
 		return false
 	var before := stage()
-	var before_ready := maxf(minf(READY_S - cook_time, delta_s), 0.0)
-	stick += before_ready * STICK_PER_S_COOKING + (delta_s - before_ready) * STICK_PER_S_READY
+	var t0 := cook_time
+	var t1 := cook_time + delta_s
+	var rest_end := READY_S + READY_REST_S
+	var cooking_s := maxf(minf(t1, READY_S) - t0, 0.0)
+	var ready_s := maxf(t1 - maxf(t0, rest_end), 0.0)
+	stick += cooking_s * STICK_PER_S_COOKING + ready_s * STICK_PER_S_READY
 	if stick >= 1.0 - 0.000001:
 		stick = 1.0
 	max_stick = maxf(max_stick, stick)

@@ -21,6 +21,8 @@ signal ticket_mood_changed(slot: int, mood: int)
 signal shift_phase_changed(phase: int)
 ## Resumo do turno (`ShiftScorer.summarize`), `END_SCREEN_DELAY_S` após o fim.
 signal shift_ended(summary: Dictionary)
+## Pausa por foco/segundo plano ligada ou desligada (a UI mostra "Pausado").
+signal pause_changed(paused: bool)
 
 const KITCHEN_SCENE := preload("res://scenes/kitchen/kitchen.tscn")
 const MODEL_PATH := "res://assets/models/kaykit/%s.gltf"
@@ -59,21 +61,24 @@ const HINT_DROP_BOARD := "Solte na tábua"
 const HINT_DROP_PAN := "Solte na panela"
 const HINT_DROP_PLATE := "Solte no prato"
 const HINT_DROP_POT := "Solte os legumes na panela"
-const HINT_CHOP := "Pique em zigue-zague ↕"
+const HINT_CHOP := "Pique em zigue-zague"
 const HINT_TO_PLATE := "Arraste para o prato"
 const HINT_FLIP := "Puxe para cima para virar"
 const HINT_PATTY_DONE := "No ponto! Tire para o prato"
 const HINT_BURNT := "Queimou! Tire da panela"
 const HINT_SERVE := "Arraste o prato até a janela"
 const HINT_SERVE_BOWL := "Arraste a tigela à janela"
-const HINT_STIR := "Mexa em círculos ⟳"
+const HINT_STIR := "Mexa em círculos"
+const HINT_SCRAPE := "Raspe a panela (3 voltas)"
 const HINT_NOBODY := "Ninguém pediu isso agora"
 const HINT_IDLE := "Pegue um ingrediente nos caixotes"
 ## Cor/alfa da fumaça por Patty.Stage (alfa 0 = sem fumaça).
 const SMOKE_COLORS: Array[Color] = [
 	Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.3), Color(1, 1, 0.9, 0.45),
-	Color(0.6, 0.6, 0.6, 0.65), Color(0.18, 0.16, 0.15, 0.85),
+	Color(0.6, 0.6, 0.6, 0.55), Color(0.22, 0.2, 0.19, 0.65),
 ]
+## Tamanho (px) da textura redonda da fumaça, gerada uma vez.
+const SMOKE_TEX_PX := 64
 
 
 ## Item na mão.
@@ -171,6 +176,7 @@ var _pot_alert: Node3D
 var _pot_steam: Node3D
 var _pot_bubbles: Node3D
 var _pot_smoke: CPUParticles3D
+var _smoke_quad: QuadMesh
 var _burnt_mat: StandardMaterial3D
 
 
@@ -245,21 +251,34 @@ func _process(delta: float) -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
-			app_paused = true
+			set_paused(true)
 		NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_APPLICATION_RESUMED:
-			app_paused = false
+			set_paused(false)
+
+
+## Pausa/retoma a cozinha inteira; emite `pause_changed` só quando muda.
+func set_paused(paused: bool) -> void:
+	if paused == app_paused:
+		return
+	app_paused = paused
+	pause_changed.emit(paused)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	var mb := event as InputEventMouseButton
 	if mb and mb.button_index == MOUSE_BUTTON_LEFT:
+		if app_paused:
+			# Desktop: o próximo clique/toque só retoma (não vira gesto).
+			if mb.pressed:
+				set_paused(false)
+			return
 		if mb.pressed:
 			pointer_down(_to_norm(mb.position), Time.get_ticks_msec())
 		else:
 			pointer_up(_to_norm(mb.position), Time.get_ticks_msec())
 		return
 	var mm := event as InputEventMouseMotion
-	if mm and (mm.button_mask & MOUSE_BUTTON_MASK_LEFT):
+	if mm and not app_paused and (mm.button_mask & MOUSE_BUTTON_MASK_LEFT):
 		pointer_move(_to_norm(mm.position), Time.get_ticks_msec())
 
 
@@ -295,7 +314,7 @@ func advance(delta: float) -> void:
 		if _end_timer >= 0.0:
 			_end_timer -= delta
 			if _end_timer < 0.0:
-				shift_ended.emit(ShiftScorer.summarize(shift_tickets))
+				shift_ended.emit(ShiftScorer.summarize(shift_tickets, clock.held_arrivals))
 		return
 	if started:
 		var ev := clock.tick(delta, tickets.open_count())
@@ -429,8 +448,9 @@ func pointer_move(p: Vector2, t_ms: int) -> void:
 	if stir.active:
 		if stir.add_sample(p, t_ms):
 			_on_stir_turn()
-		if _carry == null and stir.turns == 0 and absf(stir.turn_angle) < PI * 0.5 \
-				and pot.portions > 0 \
+		# Servir: sair do raio da panela sem nenhuma volta feita, qualquer que seja o
+		# ângulo (quem toca o lado oposto à janela passa pelo centro e gira ~180°).
+		if _carry == null and stir.turns == 0 and pot.portions > 0 \
 				and GestureRecognizer.distance_u(p, _pot_center, recognizer.aspect) > POT_LEAVE_U:
 			stir.active = false
 			_start_bowl_carry()
@@ -1009,18 +1029,38 @@ func _make_smoke(area: Node3D) -> CPUParticles3D:
 	ramp.set_color(0, Color(1, 1, 1, 1))
 	ramp.set_color(1, Color(1, 1, 1, 0))
 	smoke.color_ramp = ramp
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.35, 0.35)
+	smoke.mesh = _smoke_mesh()
+	area.add_child(smoke)
+	smoke.position = (area.get_node("Snap") as Node3D).position + Vector3(0, 0.25, 0)
+	return smoke
+
+
+## Quad de partícula com textura redonda e suave (gradiente radial), compartilhado.
+func _smoke_mesh() -> QuadMesh:
+	if _smoke_quad != null:
+		return _smoke_quad
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	g.add_point(0.5, Color(1, 1, 1, 0.8))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(0.5, 0.0)
+	tex.width = SMOKE_TEX_PX
+	tex.height = SMOKE_TEX_PX
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.vertex_color_use_as_albedo = true
-	quad.material = mat
-	smoke.mesh = quad
-	area.add_child(smoke)
-	smoke.position = (area.get_node("Snap") as Node3D).position + Vector3(0, 0.25, 0)
-	return smoke
+	mat.albedo_texture = tex
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	_smoke_quad = QuadMesh.new()
+	_smoke_quad.size = Vector2(0.4, 0.4)
+	_smoke_quad.material = mat
+	return _smoke_quad
 
 
 func _set_smoke(smoke: CPUParticles3D, stage: int) -> void:
@@ -1142,6 +1182,9 @@ func _update_hint() -> void:
 		if burnt_pan != "":
 			station = burnt_pan
 			text = HINT_BURNT
+		elif pst == StewPot.Stage.BURNT:
+			station = POT_STATION
+			text = HINT_SCRAPE
 		elif pst >= StewPot.Stage.STICKING:
 			station = POT_STATION
 			text = HINT_STIR

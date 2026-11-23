@@ -69,7 +69,25 @@ func test_stick_rate_changes_when_ready() -> void:
 	_fill()
 	pot.cook_time = 17.0
 	pot.tick(2.0)
-	assert_almost_eq(pot.stick, 1.0 / 14.0 + 1.0 / 10.0, 0.0001)
+	assert_almost_eq(pot.stick, 1.0 / 14.0, 0.0001, "1 s cozinhando + 1 s de descanso")
+
+
+func test_ready_rest_then_slow_stick() -> void:
+	_fill()
+	pot.cook_time = 17.0
+	pot.tick(9.0)   # 1 s cozinhando, 6 s de descanso, 2 s pronto
+	assert_almost_eq(pot.stick, 1.0 / 14.0 + 2.0 / 18.0, 0.0001)
+	pot.tick(18.0)
+	assert_true(pot.is_burnt(), "1/18 por s depois do descanso")
+
+
+func test_second_portion_survives_20s_after_ready() -> void:
+	_fill()
+	pot.cook_time = StewPot.READY_S
+	pot.stick = 0.0
+	pot.tick(20.0)
+	assert_false(pot.is_burnt(), "B3: a 2ª porção espera ~20 s sem mexer")
+	assert_almost_eq(pot.stick, 14.0 / 18.0, 0.0001)
 
 
 func test_stir_reduces_035() -> void:

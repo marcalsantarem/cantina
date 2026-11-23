@@ -28,16 +28,16 @@ func _run(c: ShiftClock, seconds: float, open: int) -> void:
 		left -= d
 
 
-func test_ideal_schedule_has_9_tickets() -> void:
-	assert_eq(ShiftClock.ideal_schedule(), [3.0, 25.0, 47.0, 63.0, 79.0, 95.0, 111.0, 127.0, 143.0])
+func test_ideal_schedule_has_10_tickets() -> void:
+	assert_eq(ShiftClock.ideal_schedule(), [3.0, 25.0, 47.0, 63.0, 79.0, 95.0, 111.0, 127.0, 143.0, 163.0])
 
 
 func test_arrivals_without_delay_follow_schedule() -> void:
 	var times := _arrival_times(0.1)
-	assert_eq(times.size(), 9)
+	assert_eq(times.size(), 10)
 	for i in times.size():
 		assert_almost_eq(times[i], ShiftClock.ideal_schedule()[i], 0.001)
-	assert_eq(clock.arrivals_total, 9)
+	assert_eq(clock.arrivals_total, 10)
 
 
 func test_large_tick_does_not_skip_arrivals() -> void:
@@ -75,7 +75,7 @@ func test_max_open_per_phase() -> void:
 	assert_eq(ShiftClock.max_open_at(10.0), 2)
 	assert_eq(ShiftClock.max_open_at(45.0), 4)
 	assert_eq(ShiftClock.max_open_at(140.0), 3)
-	assert_eq(ShiftClock.interval_at(140.0), 25.0)
+	assert_eq(ShiftClock.interval_at(140.0), 20.0)
 
 
 func test_full_rail_waits_vacancy_plus_4s() -> void:
@@ -92,6 +92,7 @@ func test_full_rail_waits_vacancy_plus_4s() -> void:
 	clock.tick(0.2, 1)
 	assert_eq(clock.arrivals_total, 2)
 	assert_almost_eq(clock.next_arrival_s, 56.0, 0.001, "34 + 22 (fase da chegada)")
+	assert_eq(clock.held_arrivals, 0, "a chegada atrasada entrou: nada segurado")
 
 
 func test_rush_max_frees_waiting_arrival() -> void:
@@ -104,10 +105,10 @@ func test_rush_max_frees_waiting_arrival() -> void:
 
 
 func test_no_arrivals_in_last_orders() -> void:
-	_run(clock, 150.0, 0)   # 143 chegou; agenda 168 (>= 165) -> nada
-	assert_eq(clock.arrivals_total, 9)
-	_run(clock, 30.0, 0)
-	assert_eq(clock.arrivals_total, 9)
+	_run(clock, 164.0, 0)   # 143 e 163 chegaram; agenda 183 (>= 165) -> nada
+	assert_eq(clock.arrivals_total, 10)
+	_run(clock, 16.0, 0)
+	assert_eq(clock.arrivals_total, 10)
 	assert_eq(clock.next_arrival_s, INF)
 
 
@@ -115,10 +116,21 @@ func test_delayed_arrival_after_165_is_dropped() -> void:
 	_run(clock, 140.0, 0)
 	_run(clock, 5.0, 3)     # 143 devida, cheia (3)
 	assert_true(clock.waiting_vacancy)
-	_run(clock, 18.0, 3)
-	_run(clock, 1.0, 2)     # vaga aos 163 -> 167 >= 165: não chega
+	assert_eq(clock.held_arrivals, 1)
+	_run(clock, 21.0, 3)    # a agenda fantasma passa pelos 163
+	assert_eq(clock.held_arrivals, 2)
+	_run(clock, 1.0, 2)     # vaga aos 166 -> 170 >= 165: não chega
 	_run(clock, 10.0, 2)
 	assert_eq(clock.arrivals_total, 8)
+	assert_eq(clock.held_arrivals, 2, "as 2 seguradas contam no atendimento")
+
+
+func test_idle_rail_keeps_full_schedule() -> void:
+	# Ninguém atende: o trilho lota e as chegadas seguradas completam a agenda (B2).
+	while not clock.ended:
+		clock.tick(0.05, clock.arrivals_total)
+	assert_eq(clock.arrivals_total, 4)
+	assert_eq(clock.arrivals_total + clock.held_arrivals, ShiftClock.ideal_schedule().size())
 
 
 func test_wall_clock() -> void:

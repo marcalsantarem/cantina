@@ -7,6 +7,8 @@ extends CanvasLayer
 ## sem passar do que deixa SLOTS bilhetes lado a lado.
 ## M2 (BRF-016), sinais opcionais: ticket_item_delivered, ticket_mood_changed,
 ## shift_phase_changed (placas) e shift_ended (tela de fim; "Jogar de novo" -> replay_requested).
+## Ressalvas M2 (BRF-019): pause_changed (aviso "Pausado"); o balão de dica não cobre a fita "próximo";
+## a escala usa px de CSS (divide pelo devicePixelRatio), não px físicos.
 
 signal replay_requested
 
@@ -28,12 +30,15 @@ const OPTIONAL_SIGNALS := {
 	"ticket_mood_changed": "_on_ticket_mood_changed",
 	"shift_phase_changed": "_on_shift_phase_changed",
 	"shift_ended": "_on_shift_ended",
+	"pause_changed": "_on_pause_changed",
 }
 
 ## Tempo que o bilhete-resposta fica visível.
 @export var reply_seconds := 4.0
 ## Altura mínima (px de tela) do texto da frase do bilhete.
-@export var min_phrase_px := 13.0
+@export var min_phrase_px := 16.0
+## Escala a partir da qual o bilhete fica compacto (frase em 1 linha): só telas baixas, não o desktop.
+const COMPACT_SCALE := 1.2
 ## Ampliação máxima dos bilhetes.
 @export var max_ui_scale := 2.0
 
@@ -52,6 +57,13 @@ static func ticket_scale_for(screen_scale: float, font_size: float, min_px: floa
 	return clampf(min_px / (font_size * screen_scale), 1.0, max_scale)
 
 
+## Px reais (CSS) por unidade lógica: altura da janela em px físicos / altura lógica / devicePixelRatio.
+static func screen_scale_for(window_h: float, visible_h: float, dpr := 1.0) -> float:
+	if window_h <= 0.0 or visible_h <= 0.0:
+		return 1.0
+	return window_h / visible_h / (dpr if dpr > 0.0 else 1.0)
+
+
 ## Maior escala que ainda deixa SLOTS bilhetes lado a lado na largura visível.
 static func fit_scale_for(visible_width: float) -> float:
 	return maxf((visible_width - 2.0 * MARGIN) / (SLOTS * CARD_WIDTH + (SLOTS - 1) * GAP), 0.5)
@@ -63,6 +75,7 @@ static func fit_scale_for(visible_width: float) -> float:
 var _bubble: PanelContainer
 var _banner: PanelContainer
 var _end: Control
+var _pause: Control
 
 
 func _ready() -> void:
@@ -73,6 +86,8 @@ func _ready() -> void:
 	_end = EndScreen.new()
 	_overlay.add_child(_end)
 	_end.replay_requested.connect(replay_requested.emit)
+	_pause = _make_pause_overlay()
+	_overlay.add_child(_pause)
 	get_viewport().size_changed.connect(_refresh_anchors)
 	_refresh_anchors()
 
@@ -101,6 +116,7 @@ func unbind() -> void:
 			_controller.disconnect(pair[0], pair[1])
 	_controller = null
 	_bubble.hide_hint()
+	_pause.visible = false
 
 
 ## Balão de dica de ação.
@@ -111,6 +127,11 @@ func get_hint() -> PanelContainer:
 ## Placa do turno.
 func get_banner() -> PanelContainer:
 	return _banner
+
+
+## Aviso de pausa ("Pausado — toque para voltar").
+func get_pause_overlay() -> Control:
+	return _pause
 
 
 ## Tela de fim de turno.
@@ -172,7 +193,48 @@ func _on_gesture_feedback(quality: int, label: String, screen_pos: Vector2) -> v
 
 
 func _on_action_hint(text: String, screen_pos: Vector2) -> void:
+	_bubble.avoid = _avoid_rects()
 	_bubble.show_hint(text, screen_pos)
+
+
+## Pausa por perda de foco: aviso por cima da cozinha. Não pega o toque (a cozinha retoma).
+func _on_pause_changed(paused: bool) -> void:
+	_pause.visible = paused
+
+
+func _make_pause_overlay() -> Control:
+	var dim := ColorRect.new()
+	dim.name = "Pause"
+	dim.color = Color(0.16, 0.1, 0.08, 0.45)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.visible = false
+	var label := Label.new()
+	label.text = UiText.PAUSED
+	label.theme_type_variation = &"HintLabel"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"HintBubble"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(label)
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.add_child(panel)
+	dim.add_child(center)
+	return dim
+
+
+## O que o balão de dica não deve cobrir: a fita "próximo".
+func _avoid_rects() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	var card := get_card(get_next_slot())
+	if card:
+		var r: Rect2 = card.next_tag_screen_rect()
+		if r.has_area():
+			out.append(r.grow(4.0))
+	return out
 
 
 func _on_ticket_item_delivered(slot: int, _ticket: TicketData, item_index: int) -> void:
@@ -201,7 +263,7 @@ func _on_shift_ended(summary: Dictionary) -> void:
 func _new_card(slot: int, ticket: TicketData) -> Control:
 	var card := TicketCardScene.instantiate()
 	card.slot = slot
-	card.compact = ui_scale > 1.0
+	card.compact = ui_scale >= COMPACT_SCALE
 	_tickets.add_child(card)
 	card.resized.connect(_layout)
 	card.tree_exited.connect(_layout)
@@ -216,6 +278,7 @@ func _update_next() -> void:
 		var card := get_card(slot)
 		if card:
 			card.is_next = slot == next
+	_bubble.avoid = _avoid_rects()
 
 
 ## Posição do slot nas coordenadas (escaladas) de _tickets.
@@ -227,11 +290,11 @@ func _slot_pos(slot: int) -> Vector2:
 
 ## Pixels de tela por unidade lógica (stretch canvas_items).
 func _screen_scale() -> float:
-	var vis := get_viewport().get_visible_rect().size
 	var win := get_window()
-	if win == null or vis.y <= 0.0 or win.size.y <= 0:
+	if win == null:
 		return 1.0
-	return float(win.size.y) / vis.y
+	return screen_scale_for(float(win.size.y), get_viewport().get_visible_rect().size.y,
+			DisplayServer.screen_get_scale())
 
 
 func _refresh_anchors() -> void:
@@ -247,7 +310,7 @@ func _refresh_anchors() -> void:
 	_end.ui_scale = ui_scale
 	_tickets.size = get_viewport().get_visible_rect().size / ui_scale
 	for card in _tickets.get_children():
-		card.compact = ui_scale > 1.0
+		card.compact = ui_scale >= COMPACT_SCALE
 		card.anchor_point = _slot_pos(card.slot)
 	_layout()
 
@@ -271,3 +334,4 @@ func _layout() -> void:
 		var c: Control = cards[i]
 		var left := lefts[i] - maxf(overflow, 0.0)
 		c.layout_shift = Vector2(left - (c.anchor_point.x - c.size.x * 0.5), 0)
+	_bubble.avoid = _avoid_rects()

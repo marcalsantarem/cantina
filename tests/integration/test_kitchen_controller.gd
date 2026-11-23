@@ -235,7 +235,7 @@ func test_full_burger_served() -> void:
 	ctrl.pointer_up(_window(), t + 50)
 	assert_null(ctrl.returned_plate, "some ao tocar")
 
-	var cut_hints := ["Solte na tábua", "Pique em zigue-zague ↕", "Arraste para o prato", "Solte no prato", "Arraste o prato até a janela"]
+	var cut_hints := ["Solte na tábua", "Pique em zigue-zague", "Arraste para o prato", "Solte no prato", "Arraste o prato até a janela"]
 	var expected := ["Pegue um ingrediente nos caixotes",
 		"Solte no prato", "Arraste o prato até a janela",
 		"Solte na panela", "Puxe para cima para virar", "No ponto! Tire para o prato",
@@ -332,7 +332,7 @@ func test_stew_from_chop_to_serve() -> void:
 	_drag(board, _st("Crate_carrot"))
 
 	ctrl.advance(5.0)
-	assert_eq(hints[-1][0], "Mexa em círculos ⟳")
+	assert_eq(hints[-1][0], "Mexa em círculos")
 	feedback.clear()
 	var g := ctrl.pot.stick
 	_stir(2)
@@ -435,3 +435,41 @@ func test_background_pauses_clock() -> void:
 	ctrl._process(0.5)
 	ctrl.auto_process = false
 	assert_almost_eq(ctrl.clock.time, 1.5, 0.001, "volta a correr")
+
+
+func test_pause_changed_signal_and_click_resumes() -> void:
+	var pauses: Array = []
+	ctrl.pause_changed.connect(func(p): pauses.append(p))
+	ctrl.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	ctrl.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	assert_eq(pauses, [true], "emite só quando muda")
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = Vector2(10, 10)
+	ctrl._unhandled_input(click)
+	assert_false(ctrl.app_paused, "clique retoma")
+	assert_false(ctrl.recognizer.active, "o clique de retomar não vira gesto")
+	assert_eq(pauses, [true, false])
+	ctrl.notification(NOTIFICATION_APPLICATION_FOCUS_IN)
+	assert_eq(pauses, [true, false], "já estava retomado")
+
+
+func test_burnt_pot_hint_is_scrape() -> void:
+	ctrl.start()
+	for id in ctrl.stew_recipe.layers:
+		ctrl.pot.add(id, {Kitchen.NOTE_CUT: 1.0})
+	ctrl.advance(15.0)
+	assert_true(ctrl.pot.is_burnt())
+	assert_eq(hints[-1][0], "Raspe a panela (3 voltas)")
+
+
+func test_smoke_uses_round_soft_texture() -> void:
+	var mesh := ctrl._pot_smoke.mesh as QuadMesh
+	var mat := mesh.material as StandardMaterial3D
+	var tex := mat.albedo_texture as GradientTexture2D
+	assert_not_null(tex, "fumaça com textura")
+	assert_eq(tex.fill, GradientTexture2D.FILL_RADIAL)
+	assert_eq(tex.gradient.get_color(tex.gradient.get_point_count() - 1).a, 0.0, "borda transparente")
+	assert_eq(ctrl.pans[0].smoke.mesh, mesh, "malha compartilhada")
+	assert_lt(KitchenController.SMOKE_COLORS[Patty.Stage.BURNT].a, 0.75, "fumaça escura translúcida")

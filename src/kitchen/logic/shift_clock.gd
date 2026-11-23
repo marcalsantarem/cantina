@@ -17,7 +17,7 @@ const END_SCREEN_DELAY_S := 1.5
 ## Início de cada fase (s); CLOSED começa em DURATION_S.
 const PHASE_START_S: Array[float] = [0.0, 45.0, 135.0, 165.0, 180.0]
 ## Intervalo entre chegadas por fase (0 = sem chegadas).
-const PHASE_INTERVAL_S: Array[float] = [22.0, 16.0, 25.0, 0.0, 0.0]
+const PHASE_INTERVAL_S: Array[float] = [22.0, 16.0, 20.0, 0.0, 0.0]
 ## Máximo de bilhetes abertos por fase.
 const PHASE_MAX_OPEN: Array[int] = [2, 4, 3, 0, 0]
 ## Chance de pedido com 2 itens por fase.
@@ -44,6 +44,12 @@ var last_arrival_s: float = -1.0
 var next_arrival_s: float = FIRST_ARRIVAL_S
 ## true se a chegada devida está esperando vaga no trilho.
 var waiting_vacancy: bool = false
+## Chegadas que o trilho cheio segurou e que não chegaram (B2 do QA M2). Enquanto a
+## chegada espera vaga, a agenda "fantasma" segue o intervalo da fase e cada chegada
+## dela conta aqui; a chegada atrasada que enfim entra desconta a sua.
+var held_arrivals: int = 0
+var _ghost_next_s: float = INF
+var _held_pending: bool = false
 var _phase: int = Phase.OPENING
 
 
@@ -77,7 +83,7 @@ static func wall_clock_at(t: float) -> Vector2i:
 	return Vector2i(floori(m / 60.0), m % 60)
 
 
-## Agenda sem atraso (para conferência): 3, 25, 47, 63, ..., 143.
+## Agenda sem atraso (para conferência): 3, 25, 47, 63, ..., 143, 163.
 static func ideal_schedule() -> Array[float]:
 	var out: Array[float] = []
 	var t := FIRST_ARRIVAL_S
@@ -131,23 +137,39 @@ func tick(delta_s: float, open_count: int) -> int:
 		if waiting_vacancy and open_count + arrivals_this_tick < max_open_at(time):
 			waiting_vacancy = false
 			next_arrival_s = time + WAIT_AFTER_VACANCY_S
+			_ghost_next_s = INF
 		var step := target
 		var boundary := _next_boundary(time)
 		if boundary < step:
 			step = boundary
 		if not waiting_vacancy and next_arrival_s < step:
 			step = next_arrival_s
+		if waiting_vacancy and _ghost_next_s < step:
+			step = _ghost_next_s
 		time = step
 		var p := phase_at(time)
 		if p != _phase:
 			_phase = p
 			ev |= Event.PHASE_CHANGED
+		if waiting_vacancy and time >= _ghost_next_s:
+			if time >= PHASE_START_S[Phase.LAST_ORDERS]:
+				_ghost_next_s = INF
+			else:
+				held_arrivals += 1
+				_ghost_next_s = time + interval_at(time)
 		if not waiting_vacancy and time >= next_arrival_s:
 			if time >= PHASE_START_S[Phase.LAST_ORDERS]:
 				next_arrival_s = INF
 			elif open_count + arrivals_this_tick >= max_open_at(time):
 				waiting_vacancy = true
+				if not _held_pending:
+					_held_pending = true
+					held_arrivals += 1
+				_ghost_next_s = time + interval_at(time)
 			else:
+				if _held_pending:
+					_held_pending = false
+					held_arrivals -= 1
 				arrivals_this_tick += 1
 				arrivals_total += 1
 				last_arrival_s = time
@@ -159,6 +181,7 @@ func tick(delta_s: float, open_count: int) -> int:
 		ended = true
 		waiting_vacancy = false
 		next_arrival_s = INF
+		_ghost_next_s = INF
 		ev |= Event.ENDED
 	return ev
 

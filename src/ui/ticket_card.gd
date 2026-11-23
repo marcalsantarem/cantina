@@ -11,11 +11,13 @@ const CLIP_COLOR := Color("#9ea8ad")
 const NEXT_COLOR := Color("#c76b45")
 const NEXT_TEXT := "próximo"
 const NEXT_LIFT := 12.0
-## Linhas da frase no modo compacto (telas baixas).
-const COMPACT_LINES := 2
+## Linhas da frase no modo compacto (telas baixas): 1 linha com reticências (M5 do QA M2).
+const COMPACT_LINES := 1
 const RECIPE_PATH := "res://data/recipes/%s.json"
-## Lado dos ícones da receita (px lógicos do bilhete).
+## Lado dos ícones da receita (px lógicos do bilhete); encolhe para a fileira caber em RECIPE_ROW_W.
 const RECIPE_ICON := 26.0
+const RECIPE_ROW_W := 162.0
+const RECIPE_GAP := 2.0
 ## Receitas cujo ícone do prato abre a fileira quando o bilhete tem mais de 1 item (tigela).
 const DISH_PREFIX: Array[String] = ["food_stew"]
 enum Mood { CONTENT, IMPATIENT, HUNGRY }  # = ShiftScorer.Mood
@@ -57,7 +59,7 @@ var next_lift := 0.0:
 	set(v):
 		next_lift = v
 		_place()
-## Modo compacto: frase do pedido em até COMPACT_LINES linhas com reticências.
+## Modo compacto: frase em até COMPACT_LINES linhas e nome em 1 linha, com reticências.
 var compact := false:
 	set(v):
 		compact = v
@@ -106,11 +108,8 @@ func show_ticket(ticket: TicketData) -> void:
 	_icon.texture = load(icon_path) if ResourceLoader.exists(icon_path) else null
 	_icon.visible = _icon.texture != null and _item_count == 1
 	_show_items(items)
-	var without: Array[String] = []
-	for it in items:
-		for id: String in it["without"]:
-			if not without.has(id):
-				without.append(id)
+	# 1 item: etiqueta "sem X" embaixo do bilhete; vários itens: uma por fileira (M2 do QA M2).
+	var without: Array = items[0]["without"] if items.size() == 1 else []
 	_without.visible = not without.is_empty()
 	if _without.visible:
 		_without.text = UiText.without_text(without)
@@ -212,7 +211,7 @@ static func layers_for(recipe_id: String, without: Array) -> Array[String]:
 func recipe_ids(item := 0) -> Array[String]:
 	var out: Array[String] = []
 	if _items.visible and item < _items.get_child_count():
-		for icon in _items.get_child(item).get_children():
+		for icon in _row(item).get_children():
 			if icon.has_meta("id"):
 				out.append(String(icon.get_meta("id")))
 	return out
@@ -226,16 +225,28 @@ func item_row_count() -> int:
 func mark_delivered(item: int) -> void:
 	if item < 0 or item >= _items.get_child_count():
 		return
-	var row: Control = _items.get_child(item)
-	row.set_meta("delivered", true)
+	_items.get_child(item).set_meta("delivered", true)
+	var row := _row(item)
 	row.get_node("Check").visible = true
 	for icon in row.get_children():
 		if icon.has_meta("id"):
 			icon.modulate.a = 0.4
+	_items.get_child(item).get_node("Without").modulate.a = 0.4
 
 
 func is_delivered(item: int) -> bool:
 	return item >= 0 and item < _items.get_child_count() and _items.get_child(item).get_meta("delivered", false)
+
+
+## Etiqueta "sem X" da fileira do item (bilhete com vários itens), ou null.
+func item_without_label(item: int) -> Label:
+	if item < 0 or item >= _items.get_child_count():
+		return null
+	return _items.get_child(item).get_node("Without")
+
+
+func _row(item: int) -> HBoxContainer:
+	return _items.get_child(item).get_node("Row")
 
 
 func hungry_label() -> Label:
@@ -255,13 +266,19 @@ func _show_items(items: Array[Dictionary]) -> void:
 		if items.size() > 1 and DISH_PREFIX.has(rid):
 			ids.append(rid)
 		ids.append_array(layers_for(rid, it["without"]))
+		var item := VBoxContainer.new()
+		item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		item.add_theme_constant_override("separation", 1)
 		var row := HBoxContainer.new()
+		row.name = "Row"
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_theme_constant_override("separation", 2)
+		row.add_theme_constant_override("separation", int(RECIPE_GAP))
+		var cols := ids.size() + 1  # + visto
+		var side := minf(RECIPE_ICON, floorf((RECIPE_ROW_W - (cols - 1) * RECIPE_GAP) / cols))
 		for id in ids:
 			var icon := TextureRect.new()
 			icon.texture = _trimmed_icon(id)
-			icon.custom_minimum_size = Vector2.ONE * RECIPE_ICON
+			icon.custom_minimum_size = Vector2.ONE * side
 			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -270,11 +287,21 @@ func _show_items(items: Array[Dictionary]) -> void:
 			row.add_child(icon)
 		var check := CheckMark.new()
 		check.name = "Check"
-		check.custom_minimum_size = Vector2.ONE * RECIPE_ICON
+		check.custom_minimum_size = Vector2.ONE * side
 		check.size_flags_horizontal = Control.SIZE_SHRINK_END | Control.SIZE_EXPAND
 		check.visible = false
 		row.add_child(check)
-		_items.add_child(row)
+		item.add_child(row)
+		var wo := Label.new()
+		wo.name = "Without"
+		wo.theme_type_variation = &"TicketWithout"
+		wo.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		wo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		wo.visible = items.size() > 1 and not (it["without"] as Array).is_empty()
+		if wo.visible:
+			wo.text = UiText.without_text(it["without"])
+		item.add_child(wo)
+		_items.add_child(item)
 		if it.get("delivered", false):
 			mark_delivered(_items.get_child_count() - 1)
 	_items.visible = not items.is_empty()
@@ -350,6 +377,8 @@ func _apply_compact() -> void:
 		return
 	_phrase.text = _full_phrase
 	_phrase.max_lines_visible = COMPACT_LINES if compact else -1
+	_name.autowrap_mode = TextServer.AUTOWRAP_OFF if compact else TextServer.AUTOWRAP_WORD_SMART
+	_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if compact else TextServer.OVERRUN_NO_TRIMMING
 	if compact:
 		_fit_phrase.call_deferred()
 
@@ -407,12 +436,33 @@ func _draw_impatient_stamp() -> void:
 	draw_string(font, Vector2(c.x - w * 0.5, c.y + 3.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, MOOD_INK)
 
 
+## Retângulo da fita "próximo" (coordenadas locais do bilhete).
+func _next_tag_rect() -> Rect2:
+	var font := get_theme_font("font", "TicketWithout")
+	var fs := get_theme_font_size("font_size", "TicketWithout")
+	var text_size := font.get_string_size(NEXT_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+	return Rect2(Vector2(size.x * 0.5 - text_size.x * 0.5 - 12.0, size.y - 6.0), Vector2(text_size.x + 24.0, text_size.y + 4.0))
+
+
+## Fita "próximo" em coordenadas de tela, já com a subida final do destaque (vazio se não é o próximo).
+func next_tag_screen_rect() -> Rect2:
+	if not is_next or not is_inside_tree():
+		return Rect2()
+	var xf := get_global_transform()
+	var tag := _next_tag_rect()
+	var out := Rect2(xf * tag.position, Vector2.ZERO)
+	for corner in [Vector2(tag.end.x, tag.position.y), tag.end, Vector2(tag.position.x, tag.end.y)]:
+		out = out.expand(xf * corner)
+	# a subida do destaque pode estar animando: cobre a posição final também.
+	out = out.merge(Rect2(out.position - Vector2(0, (NEXT_LIFT - next_lift) * xf.get_scale().y), out.size))
+	return out
+
+
 ## Fita "próximo" pendurada na base do bilhete.
 func _draw_next_tag() -> void:
 	var font := get_theme_font("font", "TicketWithout")
 	var fs := get_theme_font_size("font_size", "TicketWithout")
-	var text_size := font.get_string_size(NEXT_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
-	var tag := Rect2(Vector2(size.x * 0.5 - text_size.x * 0.5 - 12.0, size.y - 6.0), Vector2(text_size.x + 24.0, text_size.y + 4.0))
+	var tag := _next_tag_rect()
 	var ring := StyleBoxFlat.new()
 	ring.draw_center = false
 	ring.border_color = NEXT_COLOR

@@ -168,17 +168,20 @@ func test_ticket_scale_for_low_screens() -> void:
 	assert_eq(Hud.ticket_scale_for(0.1, 15.0, 13.0, 2.0), 2.0, "limite")
 
 
-func test_compact_cards_scaled_two_lines_on_screen() -> void:
+func test_compact_cards_scaled_one_line_on_screen() -> void:
 	hud.set_ui_scale(1.6)
-	var long := Fake.make_ticket(2, "Professor Otávio", "Capricha no ponto, sem pressa, e pode tirar a alface que hoje eu tô de regime.", [] as Array[String])
+	var long := Fake.make_ticket(2, "Professor Otávio Albuquerque", "Capricha no ponto, sem pressa, e pode tirar a alface que hoje eu tô de regime.", [] as Array[String])
 	for i in 3:
-		fake.ticket_added.emit(i, long if i == 1 else _ticket())
+		fake.ticket_added.emit(i, long if i == 1 else Fake.make_ticket(1, "Lia", "Capricha!"))
 	await wait_seconds(0.6)
 	var card: Control = hud.get_card(1)
 	assert_true(card.compact)
-	assert_eq(card.phrase_label().max_lines_visible, 2)
-	assert_true(card.phrase_label().get_line_count() <= 2, "frase em até 2 linhas")
+	assert_eq(card.phrase_label().max_lines_visible, 1)
+	assert_true(card.phrase_label().get_line_count() <= 1, "frase em 1 linha")
 	assert_true(card.phrase_text().ends_with("…"), "reticências")
+	var name_label: Label = card.get_node("%Name")
+	assert_eq(name_label.text_overrun_behavior, TextServer.OVERRUN_TRIM_ELLIPSIS, "nome em 1 linha")
+	assert_true(name_label.get_line_count() <= 1)
 	assert_false(hud.get_card(0).phrase_text().ends_with("…"), "frase curta inteira")
 	assert_eq(hud.get_node("Tickets").scale, Vector2.ONE * 1.6)
 	var vp := hud.get_viewport().get_visible_rect().size
@@ -319,6 +322,81 @@ func test_four_multi_cards_fit_side_by_side() -> void:
 	for i in 3:
 		assert_true(rects[i].end.x <= rects[i + 1].position.x + 0.5, "sem sobreposição %d" % i)
 	assert_true(rects[0].position.x >= 0.0 and rects[3].end.x <= vp.x + 0.5, "dentro da tela")
+
+
+func test_screen_scale_uses_css_pixels() -> void:
+	assert_almost_eq(Hud.screen_scale_for(390.0, 720.0), 390.0 / 720.0, 0.001, "844x390 com DPR 1")
+	assert_almost_eq(Hud.screen_scale_for(1170.0, 720.0, 3.0), 390.0 / 720.0, 0.001, "844x390 com DPR 3")
+	assert_eq(Hud.screen_scale_for(0.0, 720.0), 1.0)
+	# 844x390 (CSS): frase >= 16 px e 4 bilhetes cabem lado a lado.
+	var s := Hud.screen_scale_for(1170.0, 720.0, 3.0)
+	var k := minf(Hud.ticket_scale_for(s, 15.0, 16.0), Hud.fit_scale_for(844.0 * 720.0 / 390.0))
+	assert_true(15.0 * s * k >= 16.0 - 0.05, "frase legível no celular")
+
+
+func test_combo_without_label_per_item() -> void:
+	var t := Fake.make_ticket(5, "Lu do Skate", "Dois, chef!")
+	t.add_item("food_burger")
+	t.add_item("food_burger", ["food_ingredient_tomato_slice"] as Array[String])
+	fake.ticket_added.emit(0, t)
+	await wait_process_frames(3)
+	var card: Control = hud.get_card(0)
+	assert_eq(card.item_row_count(), 2)
+	assert_false(card.without_label().visible, "sem etiqueta do bilhete inteiro")
+	assert_false(card.item_without_label(0).visible, "1º item completo")
+	assert_true(card.item_without_label(1).visible, "etiqueta no 2º item")
+	assert_eq(card.item_without_label(1).text, "sem tomate")
+	assert_eq(card.recipe_ids(1).size(), 5, "fileira do 2º sem tomate")
+	fake.ticket_item_delivered.emit(0, t, 1)
+	assert_true(card.is_delivered(1))
+	assert_almost_eq(card.item_without_label(1).modulate.a, 0.4, 0.01, "esmaece junto")
+
+
+func test_single_item_without_stays_on_ticket() -> void:
+	var t := Fake.make_ticket(6, "Dona Cida", "Sem tomate!")
+	t.add_item("food_burger", ["food_ingredient_tomato_slice"] as Array[String])
+	fake.ticket_added.emit(0, t)
+	await wait_process_frames(3)
+	var card: Control = hud.get_card(0)
+	assert_true(card.without_label().visible)
+	assert_false(card.item_without_label(0).visible, "sem etiqueta repetida")
+
+
+func test_pause_overlay() -> void:
+	var pause: Control = hud.get_pause_overlay()
+	assert_false(pause.visible)
+	assert_eq(pause.mouse_filter, Control.MOUSE_FILTER_IGNORE, "o toque passa para a cozinha retomar")
+	fake.pause_changed.emit(true)
+	assert_true(pause.visible)
+	var texts := pause.find_children("*", "Label", true, false).map(func(l): return l.text)
+	assert_has(texts, "Pausado — toque para voltar")
+	for c in pause.find_children("*", "Control", true, false):
+		assert_eq(c.mouse_filter, Control.MOUSE_FILTER_IGNORE, "não pega toque: %s" % c.name)
+	var vp := hud.get_viewport().get_visible_rect().size
+	assert_true(pause.get_global_rect().encloses(Rect2(Vector2.ZERO, vp)), "cobre a cozinha")
+	fake.pause_changed.emit(false)
+	assert_false(pause.visible)
+	fake.pause_changed.emit(true)
+	hud.unbind()
+	assert_false(pause.visible, "unbind esconde")
+
+
+func test_hint_bubble_does_not_cover_next_tag() -> void:
+	for i in 4:
+		fake.ticket_added.emit(i, _ticket())
+	await wait_seconds(0.6)
+	var card: Control = hud.get_card(0)
+	var tag: Rect2 = card.next_tag_screen_rect()
+	assert_true(tag.has_area())
+	# ponto logo abaixo da fita: o balão "acima" cairia em cima dela.
+	var target := Vector2(tag.get_center().x, tag.end.y + 60.0)
+	fake.action_hint.emit("Mexa em círculos", target)
+	await wait_seconds(0.3)
+	var bubble: Control = hud.get_hint()
+	assert_true(bubble.is_shown())
+	assert_false(bubble.screen_rect().intersects(tag), "não cobre 'próximo'")
+	var vp := hud.get_viewport().get_visible_rect().size
+	assert_true(Rect2(Vector2.ZERO, vp).encloses(bubble.screen_rect()), "na tela")
 
 
 func test_fit_scale_for_four_cards() -> void:

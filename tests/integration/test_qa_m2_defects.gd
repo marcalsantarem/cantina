@@ -1,7 +1,5 @@
 extends GutTest
-## QA M2 (BRF-017): testes que provam defeitos achados no navegador.
-## Enquanto o defeito existir, o teste fica "pending" (não quebra a suíte) e diz o motivo.
-## Quando for corrigido, passa a valer como regressão.
+## QA M2 (BRF-017): regressões de defeitos achados no navegador (corrigidos no BRF-018).
 
 const GAME := preload("res://scenes/game/game.tscn")
 
@@ -43,8 +41,7 @@ func _cook_stew() -> void:
 
 
 ## Q-G1: tocar a panela no lado de baixo/esquerdo e arrastar até a janela (cima/direita)
-## passa pelo centro da panela; o ângulo gira ~180°, `turn_angle` passa de PI/2 e a
-## tigela nunca sai (kitchen_controller.gd, pointer_move, condição do _start_bowl_carry).
+## passa pelo centro da panela e o ângulo gira ~180°; a tigela tem de sair mesmo assim.
 func test_serve_stew_from_near_side_of_pot() -> void:
 	var ticket := ctrl.spawn_order(["food_stew"])
 	_cook_stew()
@@ -65,7 +62,7 @@ func test_serve_stew_from_near_side_of_pot() -> void:
 			_cook_stew()
 		if ctrl.tickets.oldest_waiting("food_stew") == null:
 			ctrl.spawn_order(["food_stew"])
-	if not failed.is_empty():
-		pending("DEFEITO Q-G1: tigela não sai ao arrastar do lado esquerdo da panela até a janela; offsets %s" % [failed])
-		return
-	assert_eq(delivered[0][1], ticket)
+	assert_eq(failed, [], "tigela sai de qualquer lado da panela")
+	assert_eq(delivered.size(), 3)
+	if delivered.size() > 0:
+		assert_eq(delivered[0][1], ticket)

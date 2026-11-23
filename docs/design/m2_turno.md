@@ -12,11 +12,12 @@ Duração: **180 s** de jogo (relógio pausa com o app em segundo plano ou na pa
 |---|---|---|---|---|
 | Abertura (calmaria) | 0–45 | 22 s (1º bilhete aos 3 s) | 2 | só 1 item |
 | Hora do rush | 45–135 | 16 s | 4 | 1 item 60%, 2 itens 40% |
-| Fechamento | 135–165 | 25 s | 3 | só 1 item |
+| Fechamento | 135–165 | 20 s | 3 | só 1 item |
 | Últimos pedidos | 165–180 | sem chegadas | — | — |
 
 - Próxima chegada = chegada anterior + intervalo da fase em que ela cai. Se o trilho estiver no máximo da fase, a chegada espera a vaga + 4 s.
-- Sequência esperada sem atraso: 3, 25, 47, 63, 79, 95, 111, 127, 143 → **9 bilhetes, ~12 itens**. Bom jogador atende ~10 itens; não é para dar conta de tudo.
+- **Chegadas seguradas** (B2 do QA M2): enquanto a chegada espera vaga, a agenda segue "fantasma" no intervalo da fase (até 165 s); cada chegada fantasma e a própria chegada segurada contam como segurada. A chegada atrasada que enfim entra desconta a sua. As que sobram no fim entram no denominador de A (§2), 1 item cada (o pedido não é sorteado). Ficar parado não encolhe a régua: parado, chegadas + seguradas = agenda sem atraso.
+- Sequência esperada sem atraso: 3, 25, 47, 63, 79, 95, 111, 127, 143, 163 → **10 bilhetes, ~12 itens**. Bom jogador atende ~10 itens; não é para dar conta de tudo.
 - Trilho com 4 vagas (`Slot1`..`Slot4`).
 - **Relógio visível na cena:** relógio de parede acima da janela de pedidos, indo de 11h00 a 14h00 (1 h de jogo = 60 s). Sem número na HUD. Reforços: sino na chegada de cada bilhete; aos 45 s placa "Hora do almoço!" e o sino fica mais vivo; aos 165 s placa "Últimos pedidos"; aos 180 s placa vira "FECHADO" com sino triplo.
 - **Fim:** aos 180 s a cozinha congela (tudo para de cozinhar), itens em preparo somem; bilhetes abertos contam como não atendidos. Após 1,5 s abre a tela de fim de turno.
@@ -29,16 +30,16 @@ Por turno, 0–100:
 | Termo | Cálculo |
 |---|---|
 | Q (qualidade) | média das notas dos bilhetes completos (0–100); 0 se nenhum |
-| A (atendimento) | 100 × itens entregues / itens dos bilhetes que chegaram |
+| A (atendimento) | 100 × itens entregues / (itens dos bilhetes que chegaram + chegadas seguradas, §1) |
 | G (agilidade) | 100 × média de `agilidade` dos bilhetes completos (§3) |
 
 | Estrelas | Condição |
 |---|---|
 | ★ | sempre (abrir a cantina já vale; sem derrota) |
-| ★★ | S ≥ 60 |
-| ★★★ | S ≥ 80 |
+| ★★ | S ≥ 60 **e** A ≥ 50 |
+| ★★★ | S ≥ 80 **e** A ≥ 75 |
 
-Referência: Q 80, A 90, G 80 → 82,5 (★★★); Q 65, A 70, G 60 → 65,5 (★★); Q 60, A 40, G 40 → 52 (★).
+Referência: Q 80, A 90, G 80 → 82,5 (★★★); Q 65, A 70, G 60 → 65,5 (★★); Q 60, A 40, G 40 → 52 (★); 1 prato perfeito e rápido com o resto parado: Q 100, A 10, G 100 → 77,5, mas A < 50 (★) (G3/B1 do QA M2).
 
 **Tela de fim de turno** (UI do AG02): estrelas (uma a uma, com sino), "Pedidos atendidos 7/9", nota média, agilidade em palavra ("Ágil" ≥ 80, "No ritmo" ≥ 50, "Sem pressa" < 50), a melhor frase de bilhete-resposta do dia, botões "Jogar de novo" e "Próximo dia" (este só no M3).
 
@@ -46,7 +47,7 @@ Referência: Q 80, A 90, G 80 → 82,5 (★★★); Q 65, A 70, G 60 → 65,5 (�
 
 O cliente **nunca vai embora** e a **nota do prato não cai** pela espera (a nota é do gesto, pilar 2). A espera pesa em **agilidade** (estrelas) e no **tom** do bilhete. Justificativa: punir o prato misturaria duas leituras e faria um prato perfeito parecer ruim.
 
-Espera `w` = do bilhete chegar até o último item entregue. Tolerância `T` = 40 s (1 item) ou 60 s (2 itens).
+Espera `w` = do bilhete chegar até o último item entregue. Tolerância `T` = 30 s (1 item) ou 50 s (2 itens) (B4 do QA M2).
 `agilidade = 1,0` se w ≤ T; cai linear até 0,3 em w = T + 60 s; mínimo 0,3.
 
 | Humor | Espera | Bilhete na cena |
@@ -73,14 +74,14 @@ A panela aceita 1 de cada picado (repetido volta à tábua). Com os 3 dentro, co
 | Vazia | `pot_A` | aceita picados | — | dica "Solte os legumes picados" |
 | Montando (1–2 itens) | `pot_A` + picados visíveis | espera o 3º | não sobe | — |
 | Cozinhando | `pot_A_stew` | 0–18 s | +1/14 por s | vapor fino |
-| Pronto | `pot_A_stew` | a partir de 18 s | +1/10 por s | vapor branco + "plim" |
+| Pronto | `pot_A_stew` | a partir de 18 s | 0 nos primeiros 6 s (descanso), depois +1/18 por s (B3 do QA M2) | vapor branco + "plim" |
 | Grudando | — | g ≥ 0,6 | — | bolhas grossas, borbulhar alto, aro laranja |
 | Quase queimando | — | g ≥ 0,85 | — | fumaça cinza |
 | Queimado | `pot_A_stew` escurecido | g = 1 | trava em 1 | fumaça escura |
 
 - **Mexer** (círculos na panela): cada volta completa reduz `g` em 0,35 (mín. 0). Sem mexer, queima aos 14 s, antes de ficar pronto: mexer é obrigatório.
 - **Servir:** arrastar da panela leva uma tigela `food_stew` (tigela automática, sem estação de montagem); a 2ª porção esvazia a panela (`pot_A`). Antes de pronto pode, mas sai "mal cozido".
-- **Panela queimada:** pode servir as porções (vira humor), ou **raspar** com 3 voltas de mexer, o que a esvazia sem custo.
+- **Panela queimada:** pode servir as porções (vira humor), ou **raspar** com 3 voltas de mexer, o que a esvazia sem custo. Dica: "Raspe a panela (3 voltas)".
 
 **Gesto mexer** (começa dentro de `Stove_Pot`): ângulo acumulado em torno do centro da panela na tela; 1 volta = 360° com raio entre 0,03 e 0,15 u e duração 0,4–1,5 s; sentido livre (inverter zera a volta em curso). Nota da volta: `perfeito` se CV do tempo das últimas 3 voltas ≤ 0,20 e CV do raio ≤ 0,25; `bom` se ambos ≤ 0,40; senão `desajeitado`.
 
@@ -110,7 +111,7 @@ Sem "sem cebola" no ensopado no M2 (a panela é compartilhada por 2 porções). 
 
 ## 7. Dificuldade
 
-Dentro do turno: §1 (intervalo 22 → 16 → 25 s; máximo aberto 2 → 4 → 3; combos só no rush). Pressão extra vem da cozinha viva, não de punição.
+Dentro do turno: §1 (intervalo 22 → 16 → 20 s; máximo aberto 2 → 4 → 3; combos só no rush). Pressão extra vem da cozinha viva, não de punição.
 
 Esboço dos dias para o M3 (cada dia libera algo, decisão 9):
 | Dia | Libera | Turno |
@@ -152,9 +153,10 @@ Esboço dos dias para o M3 (cada dia libera algo, decisão 9):
 
 ## Esclarecimentos da integração (BRF-015)
 
-- **Mexer × servir:** o toque na panela com ensopado começa o mexer; a tigela só sai se o dedo se afastar mais de 0,17 u do centro sem nenhuma volta feita (e com menos de ¼ de volta em curso). Depois de mexer, para servir é preciso soltar e arrastar de novo. A porção só sai da panela na entrega; se ninguém espera ensopado, a tigela volta e a porção fica.
+- **Mexer × servir:** o toque na panela com ensopado começa o mexer; a tigela sai quando o dedo se afasta mais de 0,17 u do centro sem nenhuma volta feita, qualquer que seja o ângulo (BRF-018, G1: quem toca o lado oposto à janela passa pelo centro e o ângulo gira ~180°; 0,17 u já está fora do raio máximo da volta, 0,15 u). Depois de mexer, para servir é preciso soltar e arrastar de novo. A porção só sai da panela na entrega; se ninguém espera ensopado, a tigela volta e a porção fica.
 - **O que volta pela janela:** item que fecha o bilhete usa a faixa da nota do bilhete; item entregue com o bilhete ainda aberto usa a faixa da nota do próprio item.
-- **Pausa:** com o app em segundo plano toda a cozinha para (relógio, carne e panela), não só o relógio.
+- **Pausa:** com o app em segundo plano toda a cozinha para (relógio, carne e panela), não só o relógio. O controller emite `pause_changed(paused)` ao pausar/retomar (só quando muda); no desktop o próximo clique/toque também retoma e não vira gesto (BRF-018, M4).
 - **Fim (180 s):** somem carne nas frigideiras, ingrediente na tábua, panela (volta a `pot_A` vazia), prato em montagem e o item na mão; a cozinha ignora toques. `shift_phase_changed` também emite `OPENING` no `start()`.
-- **Dicas:** prioridade carne queimada > panela grudando (≥ 0,6) > carne no ponto > panela com grude ≥ 0,3 ("Mexa em círculos ⟳") > ensopado pronto ("Arraste a tigela à janela") > virar > tábua > prato > caixotes. "Ninguém pediu isso agora" fica 2 s na janela.
+- **Dicas:** prioridade carne queimada > panela queimada ("Raspe a panela (3 voltas)") > panela grudando (≥ 0,6) > carne no ponto > panela com grude ≥ 0,3 ("Mexa em círculos") > ensopado pronto ("Arraste a tigela à janela") > virar > tábua > prato > caixotes. "Ninguém pediu isso agora" fica 2 s na janela.
 - **Caixotes:** chaves `carrot`/`potato`/`onion` em `food_stew.json` (iguais aos nós `Crate_*` da cena).
+- **Fumaça (BRF-018, G2):** partícula em quad com textura de gradiente radial gerada em código (borda transparente), uma malha compartilhada; fumaça escura translúcida (α 0,65).
