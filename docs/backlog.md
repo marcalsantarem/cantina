@@ -22,4 +22,6 @@
 | T-018 | Cena do M2: `stove_multi` com 2 frigideiras e panela, 3 caixotes novos, `Slot4`, relógio de parede, nós de efeito (tam. M) | M2 | AG08 | feita |
 | T-019 | Integração na cozinha: turno, 2 frigideiras, panela e mexer, servir item a item, sinais novos (tam. M) | M2 | AG01 | feita |
 | T-020 | HUD do M2: bilhete com 2 itens e humor, placas do turno, tela de fim de turno (tam. M) | M2 | AG02 | feita |
-| T-021 | Validação e balanceamento do M2 (3 turnos, desktop e mobile emulado) (tam. P) | M2 | AG03 | em andamento |
+| T-021 | Validação e balanceamento do M2 (3 turnos, desktop e mobile emulado) (tam. P) | M2 | AG03 | feita (passa com ressalvas graves → T-022, T-023) |
+| T-022 | Ressalvas do QA do M2 na cozinha: tigela x mexer (G1), fumaça preta (G2), estrelas e balanceamento (G3), panela queimada, glifos das dicas (tam. P) | M2 | AG01 | em andamento |
+| T-023 | Ressalvas do QA do M2 na UI: "sem X" por item no combo, aviso de pausa, balão sobre "próximo" em telas baixas (tam. P) | M2 | AG02 | em andamento |
