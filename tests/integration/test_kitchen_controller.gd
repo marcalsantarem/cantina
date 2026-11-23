@@ -388,6 +388,56 @@ func test_combo_delivered_item_by_item() -> void:
 	assert_eq(hints[-1][0], "Ninguém pediu isso agora")
 
 
+## Arrasta de a até b sem soltar (o item fica na mão).
+func _hold(a: Vector2, b: Vector2, steps: int = 12) -> void:
+	ctrl.pointer_down(a, t)
+	for i in range(1, steps + 1):
+		t += 16
+		ctrl.pointer_move(a.lerp(b, float(i) / steps), t)
+
+
+func _release(b: Vector2) -> void:
+	t += 16
+	ctrl.pointer_up(b, t)
+
+
+func test_delivery_target_follows_carried_recipe() -> void:
+	var targets: Array = []
+	ctrl.delivery_target_changed.connect(func(slot): targets.append(slot))
+	var burger := ctrl.spawn_order(["food_burger"])
+	var stew := ctrl.spawn_order(["food_stew"])
+	var s_burger := ctrl.slots.find(burger)
+	var s_stew := ctrl.slots.find(stew)
+	assert_ne(s_burger, s_stew)
+	assert_eq(ctrl.delivery_target, s_burger, "mão vazia: bilhete mais antigo")
+	_cook_stew()
+	# Tigela na mão: vai ao bilhete do ensopado, não ao mais antigo.
+	_hold(_st("Stove_Pot"), _window())
+	assert_true(ctrl.is_carrying())
+	assert_eq(ctrl.delivery_target, s_stew, "tigela: quem espera ensopado")
+	assert_eq(targets[-1], s_stew)
+	_release(_window())
+	assert_eq(ctrl.delivery_target, s_burger, "entregou: volta ao mais antigo")
+	# Ingrediente na mão conta como mão vazia.
+	_hold(_st("Crate_bun"), _plate())
+	assert_eq(ctrl.delivery_target, s_burger)
+	_release(_plate())
+	# Prato montado: o hambúrguer.
+	_hold(_plate(), _window())
+	assert_eq(ctrl.delivery_target, s_burger)
+	_release(_st("Crate_bun"))
+	# Tigela sem ninguém esperando ensopado: -1.
+	assert_eq(ctrl.pot.portions, 1, "sobrou uma porção")
+	_hold(_st("Stove_Pot"), _window())
+	assert_eq(ctrl.delivery_target, -1, "ninguém espera ensopado")
+	assert_eq(targets[-1], -1)
+	_release(Vector2(0.5, 0.97))
+	assert_eq(ctrl.delivery_target, s_burger)
+	# Só emite quando muda.
+	for i in range(1, targets.size()):
+		assert_ne(targets[i], targets[i - 1], "sem repetição seguida")
+
+
 func test_shift_runs_moods_and_ends() -> void:
 	ctrl.start()
 	_drag(_st("Crate_burger"), _st("Stove_Pan"))

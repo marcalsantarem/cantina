@@ -151,6 +151,29 @@ func test_oldest_open_ticket_is_next() -> void:
 	assert_eq(hud.get_next_slot(), -1)
 
 
+func test_next_follows_delivery_target() -> void:
+	for i in 3:
+		fake.ticket_added.emit(i, _ticket())
+	await wait_process_frames(2)
+	assert_eq(hud.get_next_slot(), 0, "sem o sinal ainda: FIFO")
+	fake.delivery_target_changed.emit(2)  # tigela na mão: vai ao bilhete do slot 2
+	assert_eq(hud.get_next_slot(), 2)
+	assert_true(hud.get_card(2).is_next, "fita no alvo da entrega")
+	assert_false(hud.get_card(0).is_next, "não no mais antigo")
+	fake.delivery_target_changed.emit(-1)  # ninguém espera essa receita
+	assert_eq(hud.get_next_slot(), -1)
+	for i in 3:
+		assert_false(hud.get_card(i).is_next, "sem fita")
+	fake.delivery_target_changed.emit(1)
+	assert_true(hud.get_card(1).is_next)
+	fake.ticket_served.emit(1, _ticket(), 90, 0, "ok")
+	assert_eq(hud.get_next_slot(), -1, "alvo fechado: espera o novo alvo da cozinha")
+	fake.delivery_target_changed.emit(0)
+	assert_true(hud.get_card(0).is_next)
+	hud.unbind()
+	assert_eq(hud.get_next_slot(), 0, "sem cozinha: volta ao FIFO")
+
+
 func test_next_card_is_lifted() -> void:
 	fake.ticket_added.emit(0, _ticket())
 	fake.ticket_added.emit(1, _ticket())

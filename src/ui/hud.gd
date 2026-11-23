@@ -9,6 +9,8 @@ extends CanvasLayer
 ## shift_phase_changed (placas) e shift_ended (tela de fim; "Jogar de novo" -> replay_requested).
 ## Ressalvas M2 (BRF-019): pause_changed (aviso "Pausado"); o balão de dica não cobre a fita "próximo";
 ## a escala usa px de CSS (divide pelo devicePixelRatio), não px físicos.
+## T-024 (BRF-020): se a cozinha emitir delivery_target_changed(slot), a fita segue esse alvo
+## (para onde vai o item na mão; -1 = nenhum). Sem o sinal (ou antes do 1º), vale o FIFO.
 
 signal replay_requested
 
@@ -31,6 +33,7 @@ const OPTIONAL_SIGNALS := {
 	"shift_phase_changed": "_on_shift_phase_changed",
 	"shift_ended": "_on_shift_ended",
 	"pause_changed": "_on_pause_changed",
+	"delivery_target_changed": "_on_delivery_target_changed",
 }
 
 ## Tempo que o bilhete-resposta fica visível.
@@ -48,6 +51,8 @@ var _controller: Node
 var _open := {}  # slot -> bilhete aberto
 var _order: Array[int] = []  # slots abertos, do mais antigo ao mais novo
 var _forced_scale := 0.0
+var _target := -1  # alvo dado pela cozinha (delivery_target_changed)
+var _has_target := false  # a cozinha já disse o alvo: ele manda na fita
 
 
 ## Escala dos bilhetes para que font_size * screen_scale * escala >= min_px.
@@ -115,6 +120,9 @@ func unbind() -> void:
 		if _controller.has_signal(pair[0]) and _controller.is_connected(pair[0], pair[1]):
 			_controller.disconnect(pair[0], pair[1])
 	_controller = null
+	_has_target = false
+	_target = -1
+	_update_next()
 	_bubble.hide_hint()
 	_pause.visible = false
 
@@ -149,8 +157,11 @@ func get_cards() -> Array[Node]:
 	return _tickets.get_children()
 
 
-## Slot do bilhete que recebe o próximo prato (o mais antigo aberto), ou -1.
+## Slot do bilhete que recebe o próximo prato, ou -1: o alvo da cozinha, se ela já o deu;
+## senão o mais antigo aberto.
 func get_next_slot() -> int:
+	if _has_target:
+		return _target if get_card(_target) != null else -1
 	for slot in _order:
 		if get_card(slot) != null:
 			return slot
@@ -241,6 +252,12 @@ func _on_ticket_item_delivered(slot: int, _ticket: TicketData, item_index: int) 
 	var card := get_card(slot)
 	if card:
 		card.mark_delivered(item_index)
+
+
+func _on_delivery_target_changed(slot: int) -> void:
+	_has_target = true
+	_target = slot
+	_update_next()
 
 
 func _on_ticket_mood_changed(slot: int, mood: int) -> void:

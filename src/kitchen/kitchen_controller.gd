@@ -23,6 +23,10 @@ signal shift_phase_changed(phase: int)
 signal shift_ended(summary: Dictionary)
 ## Pausa por foco/segundo plano ligada ou desligada (a UI mostra "Pausado").
 signal pause_changed(paused: bool)
+## Vaga (0..3) do bilhete que receberia a entrega agora (-1 = nenhum). Com prato montado
+## ou tigela na mão: o mais antigo que espera aquela receita; senão, o mais antigo aberto.
+## Só emite quando muda (T-024).
+signal delivery_target_changed(slot: int)
 
 const KITCHEN_SCENE := preload("res://scenes/kitchen/kitchen.tscn")
 const MODEL_PATH := "res://assets/models/kaykit/%s.gltf"
@@ -140,6 +144,8 @@ var returned_plate: Node3D
 var plate_root: Node3D
 var hint_text: String = ""
 var hint_pos := Vector2.ZERO
+## Último valor emitido em `delivery_target_changed`.
+var delivery_target: int = -1
 
 var _kitchen: Node3D
 var _camera: Camera3D
@@ -1147,7 +1153,22 @@ func _height_of(id: String, node: Node3D) -> float:
 
 # --- Dica de ação (decisão 18) ---------------------------------------------------
 
+func _update_delivery_target() -> void:
+	var tk: TicketData = null
+	if not frozen:
+		if _carry != null and (_carry.is_plate or _carry.is_bowl):
+			tk = tickets.oldest_waiting(StewPot.STEW if _carry.is_bowl else recipe.id)
+		else:
+			tk = tickets.oldest()
+	var slot := slots.find(tk) if tk != null else -1
+	if slot == delivery_target:
+		return
+	delivery_target = slot
+	delivery_target_changed.emit(slot)
+
+
 func _update_hint() -> void:
+	_update_delivery_target()
 	var text := ""
 	var station := ""
 	if frozen:
