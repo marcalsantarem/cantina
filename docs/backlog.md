@@ -27,4 +27,5 @@
 | T-023 | Ressalvas do QA do M2 na UI: "sem X" por item no combo, aviso de pausa, balão sobre "próximo" em telas baixas (tam. P) | M2 | AG02 | feita |
 | T-024 | Etiqueta "próximo" aponta o bilhete que receberá o item carregado (sinal `delivery_target_changed`) (tam. P) | M2 | AG01 + AG02 | feita |
 | T-025 | Cozinhar simples (decisão 22): tirar picar/virar/mexer, tudo arrastar e soltar; nota por ponto, receita e agilidade (tam. M) | M2 | AG01 | feita |
-| T-026 | Validação rápida do cozinhar simples no navegador (tam. P) | M2 | AG03 | em andamento |
+| T-026 | Validação rápida do cozinhar simples no navegador (tam. P) | M2 | AG03 | feita (passa com ressalvas → T-027) |
+| T-027 | Ressalvas do T-026: bilhete expandido cobre caixotes em telas baixas, balão sobre a fumaça, "Tire no ponto!" cedo, frase do dia repetida (tam. P) | M2 | AG01 + AG02 | em andamento |

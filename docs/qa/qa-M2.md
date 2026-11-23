@@ -105,3 +105,62 @@ Melhorou muito. Há relógio visível, as placas marcam as fases, o trilho enche
 
 ## Não verificado
 Toque real e multitoque; desempenho em celular (Android, Safari iOS); PWA/offline; áudio (não existe); pausa por segundo plano no celular (só vi a perda de foco no desktop); raspar a panela de propósito com 3 voltas (só aconteceu por acidente, com o laço de mexer); prato devolvido sem tocar bloqueando algo; turnos com jogador humano (os números são de gestos automáticos).
+
+## Cozinhar simples (T-026)
+
+**Data:** 2026-11-23 · **Agente:** AG03 · **Build:** export Web release local, commit `b522307` (BRF-021) · **Briefing:** BRF-022
+
+### Veredito: **passa com ressalvas**
+Sem gestos ficou **simples de verdade**: tudo é arrastar e soltar, a tábua pica sozinha em 1,5 s e a panela cozinha sozinha. Nenhum texto pede movimento. Continua dinâmico no rush (2 frigideiras + panela + tábua única + prato único), mas **ficou fácil demais**: ★★★ nos 2 turnos, inclusive no turno com 2 carnes queimadas. Há 1 grave de layout no celular (G1) e proposta de aperto de tempos (B6–B10).
+
+### Evidências
+- **Suíte (1×):** 16 scripts, **144/144** passando, 1299 asserts, saída 0, sem "Parse error".
+- **Build web:** `index.wasm` 39,5 MB (10,1 MB gzip); `index.pck` 5,50 MB (5,29 MB gzip), 11 KB menor que no M2.
+- **Turnos** (navegador embutido, 1280×720; arrastes por eventos sintéticos de mouse; laço por `setTimeout` e tempo do jogo congelado nas capturas, só no teste):
+
+| Turno | ★ | Pedidos | Nota média | Agilidade | O que fiz |
+|---|---|---|---|---|---|
+| 1 (ritmo de robô) | ★★★ | 8/9 | 87 | No ritmo | Hambúrgueres nas 2 frigideiras, ensopado, combos (hambúrguer+ensopado e 2 hambúrgueres) entregues item a item, 1 carne queimada, panela queimada esvaziada com 1 toque, 2ª porção servida "crocante" (gancho de queimado). |
+| 2 (ritmo humano: ~0,7 s entre ações, 1,5 s de reação) | ★★★ | 7/10 | 84 | Ágil | 2 carnes **queimadas de propósito** e descartadas no caixote, 1 carne tirada passando do ponto ("Bom"), 2 ensopados de uma panela, 1 picado perdido. "Jogar de novo" 2× (cozinha limpa). |
+
+**Capturas** (`docs/capturas/qa_simples_*`): `carne_no_ponto`, `carne_passando`, `carne_queimada`, `panela_queimada`, `fim_t1`, `fim_t2` (1280×720); `rush`, `fim`, `jogar_de_novo` (844×390).
+
+### Mancha escura na carne (pendência)
+**Não reproduz no navegador.** No ponto (10–14 s) a fumaça sai clara e translúcida (`qa_simples_carne_no_ponto`); de 14 a 20 s vira véu cinza com o aro (`carne_passando`). A mancha da captura headless tem o formato do quad redondo da fumaça, só que preto. A causa provável é a partícula desenhada **sem a cor por instância** na captura offscreen: o material usa `vertex_color_use_as_albedo` (`src/kitchen/kitchen_controller.gd:974`, em `_smoke_mesh` :956) e a cor vem de `smoke.color` em `_set_smoke` (:985), com os valores de `SMOKE_COLORS` (:73-76). Defeito do ambiente de captura, não do jogo. Não é sombra: a carne não projeta sombra ali.
+
+### Problemas
+**Bloqueantes:** nenhum.
+
+**Graves**
+- **G1. Em 844×390 o bilhete "próximo" expandido cobre os caixotes de cenoura e batata, metade do de cebola e o canto da tábua** (`qa_simples_rush_844x390`). O toque atravessa o bilhete (peguei a cenoura "às cegas" e funcionou), mas o jogador não vê os caixotes, e isso acontece justamente quando o próximo pedido é ensopado. No celular é a tela normal. Sugestão: bilhete expandido sem invadir a faixa dos caixotes (ancorar à direita) ou caixotes acima do bilhete.
+
+**Menores**
+- **M1. "Tire no ponto!" aparece aos 8 s** (`is_cooked`, `kitchen_controller.gd:1108`), mas o perfeito só começa aos 10 s. Quem obedece na hora ganha "Bom". A dica segue igual entre 14 e 20 s, quando já está passando. Sugestão: a dica só de 10 a 14 s, e "Tire já!" depois.
+- **M2. A fumaça escura da carne queimada quase não aparece:** ela sobe para trás do balão "Queimou! Tire da frigideira", que fica logo acima da frigideira. O sinal que funciona é o carvão + aro. Aceitável; anotar para a arte.
+- **M3. "Melhor frase do dia" saiu igual nos 2 turnos** ("Tá de parabéns! Voltei a acreditar no amor.").
+- **M4. Restos de gesto só internos:** sinal `gesture_feedback` (`hud.gd:105`), comentário "feedback de gesto" (`feedback_word.gd:2`), classe/teste `GestureRecognizer`. Nenhum texto de jogador pede picar, puxar, mexer ou virar. Não há feedback de corte (só o "pop" + brilho ao terminar de picar).
+
+### Balanceamento: ainda há tensão?
+**Pouca.** Sem gesto, o tempo de espera virou ocioso: enquanto a carne cozinha (10 s), dá para picar a alface e montar o prato com folga, e a panela não pede nada durante 22 s depois de pronta. A janela de perfeito de 4 s é larga para quem só arrasta. O único aperto real é o **prato único** no rush. Mesmo errando de propósito (T2), deu ★★★ e "Ágil": a régua ficou baixa para o jogo novo.
+
+| # | Mudança | Onde | Por quê |
+|---|---|---|---|
+| B6 | Perfeito 10–14 → **10–12,5 s**; queima 20 → **18 s** | `patty.gd:11-13` | Recoloca a decisão "tiro agora?" que o virar dava. |
+| B7 | Rush: intervalo 16 → **13 s**; combo 0,4 → **0,5** | `shift_clock.gd:20,24` | Sem gesto, cada prato sai ~5 s mais rápido; mais pedidos devolvem o malabarismo. |
+| B8 | ★★★ com S ≥ **85** (era 80) | `shift_scorer.gd:23` | T2, com 2 carnes queimadas, não deveria dar 3 estrelas. |
+| B9 | Tolerância 30/50 → **25/45 s** | `shift_scorer.gd:9-10` | "Ágil" veio fácil mesmo em ritmo humano. |
+| B10 | Panela queima 25 → **18 s** depois de pronta (37 → 30 s) | `stew_pot.gd` | A panela volta a disputar atenção sem gesto. A 2ª porção ainda espera ~10 s. |
+
+Reavaliar no celular com o dedo antes de aplicar tudo: o toque humano é mais lento que o robô (B6 e B7 juntos podem pesar).
+
+### Roteiro para o dono (celular, ~5 min)
+1. Abra em paisagem e toque para começar. Arraste a carne às 2 frigideiras.
+2. Arraste alface à tábua: ela pica sozinha? O "toc-toc-pop" dá prazer ou é espera chata?
+3. Monte um hambúrguer (pão, carne, queijo, alface, tomate, tampa) e arraste à janela. Quando "Tire no ponto!" aparece, tire na hora: deu "Perfeito" ou "Bom"? (Hoje sai "Bom" se tirar antes de 10 s, M1.)
+4. Quando o "próximo" for ensopado: você vê os caixotes de cenoura e batata ou o bilhete cobre (G1)?
+5. Deixe uma carne queimar e uma panela queimar; toque na panela para esvaziar. Os sinais são claros?
+6. Jogue até o "Fechado!", veja as estrelas e toque "Jogar de novo".
+7. Diga: ficou **fácil** ou **parado** em algum momento? Em que fase (calmaria, rush, fechamento)?
+
+### Não verificado
+Toque real e multitoque; desempenho no celular (o laço foi forçado por `setTimeout`); som do "toc"/"pop" (o áudio não foi conferido); jogador humano de verdade (os números são de arrastes sintéticos); 1024×768; panela queimada servida (só a "crocante", OVERDONE/SCORCHING).

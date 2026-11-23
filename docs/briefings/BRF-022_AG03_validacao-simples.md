@@ -1,0 +1,7 @@
+# BRF-022 — AG03 — T-026 validação rápida do cozinhar simples
+**Leia:** `docs/agentes/AG03_qa.md`, decisão 22, `docs/design/m2_turno.md` seção "Cozinhar simples — decisão 22", `docs/qa/qa-M2.md` (formato). **Regra:** respostas curtas; sem commit/push/branches.
+**Contexto:** o dono pediu para tirar gestos (picar, virar, mexer): agora é só arrastar e soltar. Avalie se ficou simples **e** ainda divertido/dinâmico.
+**Pendência conhecida (confirmar no navegador):** mancha escura sobre a carne no ponto na frigideira (captura headless) — fumaça? sombra? diga a causa provável com arquivo:linha.
+**Fazer:** (1) Suíte 1 vez (144). (2) Export web local, servir estático e jogar 2 turnos completos no navegador embutido (`mcp__Claude_Browser__*`): hambúrgueres nas 2 frigideiras, ensopado, combo, deixar carne e panela queimarem, esvaziar panela queimada, fim de turno e "Jogar de novo". Anote estrelas e itens. (3) Procure resto de gesto: dicas com "pique/puxe/mexa", feedback de corte, algo que exija movimento. (4) Balanceamento: ainda há tensão sem gestos? proponha ajuste de tempos se o jogo ficou fácil/parado. (5) Capturas `docs/capturas/qa_simples_*.png` (1280×720 e 844×390). (6) Acrescente a seção "Cozinhar simples (T-026)" ao fim de `docs/qa/qa-M2.md` com veredito, problemas por gravidade e roteiro curto atualizado para o dono no celular.
+**Permitido:** `tests/`, `docs/qa/`, `docs/capturas/qa_simples_*`. **Proibido:** o resto.
+**Entrega:** até 6 linhas.
