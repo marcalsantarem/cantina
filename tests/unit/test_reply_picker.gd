@@ -35,7 +35,7 @@ func test_hook_is_appended() -> void:
 
 func test_unknown_dominant_has_no_hook() -> void:
 	var pool: Array = picker.bands["great"]
-	assert_has(pool, picker.pick(DishScorer.Band.GREAT, DishScorer.ERR_ALIGN))
+	assert_has(pool, picker.pick(DishScorer.Band.GREAT, DishScorer.ERR_COOK))
 
 
 func test_no_immediate_repeat() -> void:

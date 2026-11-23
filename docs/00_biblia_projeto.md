@@ -2,12 +2,12 @@
 
 ## Pitch
 
-**Cantina** é um jogo de cozinha **zen** para web/PWA, em paisagem. A câmera fica **fixa, olhando a cozinha de frente**, como um palco. Você **nunca vê o cozinheiro**: suas mãos são o seu dedo (ou o mouse). Cada ação é um **gesto de cozinheiro** e o capricho do gesto define a qualidade do prato. Os clientes também são **invisíveis**: existem só nos bilhetes que chegam pela janela de pedidos e no que volta dela.
+**Cantina** é um jogo de cozinha **zen** para web/PWA, em paisagem. A câmera fica **fixa, olhando a cozinha de frente**, como um palco. Você **nunca vê o cozinheiro**: suas mãos são o seu dedo (ou o mouse). Cozinhar é **arrastar e soltar**: as estações trabalham sozinhas e o desafio é o malabarismo e o ponto certo (decisão 22). Os clientes também são **invisíveis**: existem só nos bilhetes que chegam pela janela de pedidos e no que volta dela.
 
 ## Pilares
 
 1. **Turno com pico:** cada dia é um turno curto com calmaria e hora do rush, sem derrota; estrelas no fim (decisão 6). **Cozinha viva:** as estações cozinham e queimam sozinhas, o jogador faz malabarismo (decisão 19).
-2. **Gesto é a mecânica** (decisão 4): o jogo se sente nas mãos.
+2. **Arrastar e soltar** (decisão 22): simples de jogar; a graça está no ponto e no malabarismo, não em gestos.
 3. **Clientes invisíveis com personalidade** (decisão 5): humor e calor pelos bilhetes.
 4. **Um só quadro** (decisão 3): toda a cozinha visível de uma vez, sem navegar.
 
@@ -23,18 +23,18 @@
 
 Câmera 3D em perspectiva leve, de frente e um pouco acima da bancada.
 
-## Gestos [Proposta, detalhar no M1]
+## Interação (decisão 22)
 
-| Ação | Gesto | Qualidade |
+| Ação | Como | Nota |
 |---|---|---|
 | Pegar ingrediente | tocar no caixote e arrastar | — |
-| Picar (alface, tomate, cebola, cenoura, batata) | zigue-zague sobre a tábua | ritmo e cobertura |
-| Virar hambúrguer / carne | puxão rápido para cima na panela | momento certo (cru → no ponto → queimado) |
-| Mexer ensopado | círculos na panela | regularidade |
-| Montar | arrastar ao prato, na ordem | ordem e alinhamento |
-| Servir | arrastar o prato para a janela | — |
+| Picar | soltar na tábua; pica sozinha (~1,5 s) | — |
+| Carne | soltar na frigideira; cozinha sozinha | ponto ao tirar (cru → no ponto → queimado) |
+| Ensopado | soltar os picados na panela; cozinha sozinha | ponto ao servir (queima se esquecida) |
+| Montar | arrastar ao prato, na ordem | ordem e receita certa |
+| Servir | arrastar prato/tigela para a janela | agilidade |
 
-Qualidade: **perfeito / bom / desajeitado**. Queimar não é derrota: o prato sai, mas o bilhete de volta mostra a reação.
+Queimar não é derrota: o prato sai, mas o bilhete de volta mostra a reação.
 
 ## Clientes invisíveis [Proposta]
 

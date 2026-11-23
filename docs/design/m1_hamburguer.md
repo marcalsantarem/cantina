@@ -1,6 +1,7 @@
 # M1: fluxo do hambúrguer (especificação T-005 / T-007)
 
-Decisões vigentes: 3 (cena única de frente), 4 (gesto define qualidade), 5 (clientes invisíveis), 6 (Zen; revista em 2026-11-23, ver m2_turno.md).
+Decisões vigentes: 3 (cena única de frente), 5 (clientes invisíveis), 6 (Zen; revista em 2026-11-23, ver m2_turno.md), 22 (cozinhar simples, substitui a 4).
+> **Substituído pela decisão 22 (T-025):** §2.2 (picar), §2.3 (virar), o alinhamento de §2.4, a tabela por lado de §3, os cortes/"passar do ponto" de §1 e os pesos de corte/alinhamento da nota do prato. O que vale está em [m2_turno.md, "Cozinhar simples — decisão 22"](m2_turno.md#cozinhar-simples--decisão-22).
 Contrato: id de ingrediente/estado = nome base do glTF em `KayKit_Restaurant_Bits_1.0_FREE/Assets/gltf`.
 Notação de qualidade: `perfeito` = 1.0, `bom` = 0.7, `desajeitado` = 0.4, `ausente`/`queimado` = 0.
 
@@ -31,18 +32,18 @@ Entrada (todos): sequência de amostras `{p: Vector2 em 0–1 da viewport, t: ms
 - Reconhece: toque em `Crate_*`, `CuttingBoard` (item pronto), `Stove_Pan` (carne) ou `Plate_Assembly` (prato) e deslocamento ≥ 0,02 u. Toque < 0,02 u e < 200 ms = toque simples (não faz nada no M1).
 - Durante: item segue o dedo, 0,03 u acima da bancada. Solta: destino = `Area3D` sob o ponto final.
 
-**2.2 Picar em zigue-zague** (tábua com ingrediente cru)
+**2.2 Picar em zigue-zague** (tábua com ingrediente cru) — *substituído pela decisão 22: pica sozinho em 1,5 s*
 - Reconhece: gesto começa dentro de `CuttingBoard`. Divide-se em traços pela inversão do sentido em y. Traço válido: |Δy| ≥ 0,05 u e duração 80–600 ms. 1 traço válido = 1 corte. Pausa > 1,0 s encerra a sessão; o progresso fica, a próxima sessão continua.
 - Cortes exigidos: alface 6, tomate 6.
 - Ritmo: CV (desvio-padrão/média) das durações dos traços válidos.
 - Cobertura: a largura do ingrediente na tela é dividida em 5 faixas em x; cobertura = faixas tocadas por algum ponto de virada / 5.
 - Qualidade: `perfeito` se CV ≤ 0,25 e cobertura = 100%; `bom` se CV ≤ 0,50 e cobertura ≥ 60%; senão `desajeitado`. Alface com > 10 cortes: força `desajeitado`.
 
-**2.3 Virar com puxão** (carne na panela)
+**2.3 Virar com puxão** (carne na panela) — *substituído pela decisão 22: não vira*
 - Reconhece: começa dentro de `Stove_Pan`; deslocamento para cima ≥ 0,12 u em ≤ 250 ms; |Δx| ≤ 0,5·|Δy|. Puxão fraco (0,05–0,12 u) só sacode a panela.
 - Qualidade: vem do tempo do lado que estava para baixo (§3). Cada carne tem 2 notas: `lado_a` (no 1º puxão) e `lado_b` (ao tirar da panela).
 
-**2.4 Montar** (soltar no `Plate_Assembly`)
+**2.4 Montar** (soltar no `Plate_Assembly`) — *alinhamento substituído pela decisão 22: sem nota*
 - Reconhece: arrastar (2.1) com item de receita, soltando sobre o prato.
 - Alinhamento: distância d entre o ponto de soltura e o centro do prato na tela. `perfeito` d ≤ 0,02 u; `bom` d ≤ 0,05 u; senão `desajeitado`. O visual fica sempre centralizado no `Snap`, sem giro, cada item sobre o topo (AABB) do anterior (decisão 17); `PlateStack` ainda guarda `offset`/`tilt_deg`, sem uso visual.
 - Ordem: fora de ordem é aceito (empilha mesmo assim); conta como posição errada.
@@ -52,7 +53,7 @@ Entrada (todos): sequência de amostras `{p: Vector2 em 0–1 da viewport, t: ms
 - Reconhece: arrastar o prato (toque no `Plate_Assembly` com pilha ≥ 1 item) e soltar em `OrderWindow`. Vai para o bilhete mais antigo do `TicketRail`. Sem qualidade de gesto.
 - Prato incompleto pode ser servido (Zen); os itens ausentes valem 0. O prato vazio reaparece no `Plate_Assembly` em 1,5 s.
 
-## 3. Cozimento sem relógio de pressão
+## 3. Cozimento sem relógio de pressão (tempos substituídos pela decisão 22)
 
 Tempo t de cada lado só corre com a carne na panela e aquele lado para baixo (a panela está sempre quente; tirar a carne pausa tudo).
 
@@ -74,7 +75,7 @@ Pedido (`Resource` `TicketData`): `{id, apelido: String, frase: String, receita:
 - No máximo 3 bilhetes abertos; um novo chega 6 s depois que houver vaga. Bilhetes não expiram.
 - Exemplos: "Zé do Bairro" — "O de sempre, caprichado que hoje é sexta!"; "Dona Cida" — "Sem tomate, por favor, é sério."; "Turma do 3º B" — "Queremos o mais bonito que você já fez."
 
-Nota do prato (0–100) = round(100 × Σ peso·componente):
+Nota do prato (0–100) = round(100 × Σ peso·componente) — *pesos substituídos pela decisão 22 (ponto 0,45 + receita 0,35 + ordem 0,20; ver m2_turno.md)*:
 | Componente | Peso | Cálculo |
 |---|---|---|
 | Corte | 0,20 | média das notas de corte dos itens de corte pedidos |

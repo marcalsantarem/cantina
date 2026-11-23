@@ -8,36 +8,19 @@
 	],
 	"aliases": {},
 	"patty": "",
-	"cut_layers": [
-		"food_ingredient_carrot_chopped",
-		"food_ingredient_potato_chopped",
-		"food_ingredient_onion_chopped"
-	],
 	"optional": [],
 	"chop": {
 		"food_ingredient_carrot": {
-			"cuts": 5,
 			"result": "food_ingredient_carrot_chopped",
-			"overcut": 9,
-			"overcut_result": "food_ingredient_carrot_chopped",
-			"carry": "food_ingredient_carrot_chopped",
-			"overcut_carry": "food_ingredient_carrot_chopped"
+			"carry": "food_ingredient_carrot_chopped"
 		},
 		"food_ingredient_potato": {
-			"cuts": 5,
 			"result": "food_ingredient_potato_chopped",
-			"overcut": 9,
-			"overcut_result": "food_ingredient_potato_chopped",
-			"carry": "food_ingredient_potato_chopped",
-			"overcut_carry": "food_ingredient_potato_chopped"
+			"carry": "food_ingredient_potato_chopped"
 		},
 		"food_ingredient_onion": {
-			"cuts": 6,
 			"result": "food_ingredient_onion_chopped",
-			"overcut": 9,
-			"overcut_result": "food_ingredient_onion_chopped",
-			"carry": "food_ingredient_onion_chopped",
-			"overcut_carry": "food_ingredient_onion_chopped"
+			"carry": "food_ingredient_onion_chopped"
 		}
 	},
 	"crates": {

@@ -1,7 +1,8 @@
 # M2: Turno (especificação T-014)
 
 Decisões vigentes: 6 (turno ~3 min, calmaria e rush, sem derrota, 1–3 estrelas), 9 (cardápio que cresce), 19 (cozinha viva), 20 (mais receitas, pedidos com mais de 1 item).
-Base: [m1_hamburguer.md](m1_hamburguer.md) (gestos, notas 1.0/0.7/0.4/0, carne, montagem e nota do hambúrguer continuam valendo, salvo o que estiver abaixo).
+Base: [m1_hamburguer.md](m1_hamburguer.md) (notas 1.0/0.7/0.4/0, montagem e servir continuam valendo, salvo o que estiver abaixo).
+> **Decisão 22 (T-025):** os gestos (picar, virar, mexer), a nota de corte e a de alinhamento saíram. O que vale para tábua, carne, panela e notas está em [Cozinhar simples — decisão 22](#cozinhar-simples--decisão-22), no fim; os trechos de gesto/grude de §4 e dos esclarecimentos ficam como histórico.
 Problema: o M1 tem 1 receita, 1 fila de gestos, nada em jogo. O M2 cria **tensão** (relógio e rush), **malabarismo** (3 fontes de calor ao mesmo tempo) e **variedade** (2 receitas, pedidos combinados), sem derrota.
 
 ## 1. Turno
@@ -62,10 +63,10 @@ Resposta: se `agilidade < 0,7`, a frase ganha gancho de demora, que substitui o 
 
 Fogão `stove_multi` (4 bocas) no lugar do `stove_single`: **2 frigideiras** (`Stove_Pan` (1ª), `Stove_Pan2`, `pan_A`) + **1 panela** (`Stove_Pot`, `pot_A`). A 4ª boca fica livre para o M3. Tudo cozinha sozinho com o tempo, em paralelo; tirar da boca pausa (frigideira) ou não existe (panela é fixa).
 
-### 4.1 Frigideiras
+### 4.1 Frigideiras (tempos substituídos pela decisão 22)
 Mesma carne e mesma tabela do M1 §3, em cada frigideira de forma independente. Sinais de atenção, por frigideira: 7 s brilho + "tss" curto; 10 s fumaça cinza + aro laranja pulsando na boca; 13 s fumaça escura.
 
-### 4.2 Ensopado (`food_stew`)
+### 4.2 Ensopado (`food_stew`) (grude, mexer e corte substituídos pela decisão 22)
 Ingredientes (caixotes novos): cenoura `crate_carrots`, batata `crate_potatoes`, cebola `crate_onions`. Picar na tábua (gesto M1 §2.2): cenoura 5 cortes → `food_ingredient_carrot_chopped`; batata 5 → `food_ingredient_potato_chopped`; cebola 6 → `food_ingredient_onion_chopped`. Mais de 9 cortes força `desajeitado`.
 A panela aceita 1 de cada picado (repetido volta à tábua). Com os 3 dentro, começa a cozinhar. **Rende 2 porções.**
 
@@ -160,3 +161,39 @@ Esboço dos dias para o M3 (cada dia libera algo, decisão 9):
 - **Dicas:** prioridade carne queimada > panela queimada ("Raspe a panela (3 voltas)") > panela grudando (≥ 0,6) > carne no ponto > panela com grude ≥ 0,3 ("Mexa em círculos") > ensopado pronto ("Arraste a tigela à janela") > virar > tábua > prato > caixotes. "Ninguém pediu isso agora" fica 2 s na janela.
 - **Caixotes:** chaves `carrot`/`potato`/`onion` em `food_stew.json` (iguais aos nós `Crate_*` da cena).
 - **Fumaça (BRF-018, G2):** partícula em quad com textura de gradiente radial gerada em código (borda transparente), uma malha compartilhada; fumaça escura translúcida (α 0,65).
+
+## Cozinhar simples — decisão 22
+
+A única interação é **tocar/arrastar/soltar** (sem zigue-zague, puxão ou círculos). `GestureRecognizer` só reconhece arrastar (≥ 0,02 u) e toque (< 200 ms parado); `StirGesture` saiu.
+
+**Tábua (`ChopTarget`):** soltar o ingrediente cru → pica sozinho em **1,5 s** (4 batidas da faca: o modelo dá um "toc"; na última troca para o picado com um "pop" e brilho). Cru não sai da tábua (pode esperar). Depois arrastar o picado; tomate: a tábua mostra `tomato_slices` e o dedo leva 1 `tomato_slice`. Sem nota de corte e sem "passar do ponto" (`lettuce_chopped` saiu da receita). `data/recipes/*.json`: `chop` = `{result, carry}`; `cut_layers` saiu.
+
+**Frigideira (`Patty`):** cozinha sozinha, sem virar (um só tempo `time`).
+
+| t (s) | Modelo | Sinal | Nota ao tirar |
+|---|---|---|---|
+| 0–8 | `burger_uncooked` | — | `desajeitado` 0,4 (cru) |
+| 8–10 | `burger_cooked` | fumaça leve | `bom` 0,7 |
+| 10–14 | cooked | brilho (fumaça clara) | `perfeito` 1,0 |
+| 14–20 | cooked | fumaça cinza + aro `Fx_Alert` | `bom` 0,7 |
+| ≥ 20 | `burger_trash` | fumaça escura | `queimado` 0 |
+
+Nota única `{"ponto": x}` gravada ao tirar (tirar pausa). Feedback "Perfeito!/Bom/Ops" ao tirar.
+
+**Panela (`StewPot`):** soltar os 3 picados (1 de cada) → cozinha sozinha; **pronta aos 12 s**; sem mexer, sem grude. Esquecida, queima **25 s depois de pronta** (37 s). Rende 2 porções.
+
+| t (s) | Estágio | Sinal | Ponto ao servir |
+|---|---|---|---|
+| 0–12 | COOKING | vapor | `desajeitado` (cru) |
+| 12–22 | READY | vapor | `perfeito` |
+| 22–31 | OVERDONE | bolhas + aro | `bom` |
+| 31–37 | SCORCHING | bolhas + aro + fumaça cinza | `bom` |
+| ≥ 37 | BURNT | `pot_A_stew` escurecido + fumaça escura | `queimado` (0) |
+
+Arrastar a panela leva a tigela (a porção sai só na entrega). **Panela queimada:** ainda dá para servir (nota baixa, gancho `stew_burnt`) ou **tocar nela uma vez** para esvaziar (escolhido por ser o mais simples: não precisa de caixote/lixo). Feedback "Perfeito!/Bom/Ops" ao entregar a tigela.
+
+**Notas (0–100):**
+- Hambúrguer = 0,45 × ponto da carne + 0,35 × receita certa (1 − 0,5 por item faltando ou proibido, mín. 0) + 0,20 × ordem (maior subsequência comum / camadas pedidas). Sem alinhamento (prato já sai alinhado) e sem corte. Referências: perfeito 100; carne `bom` ~87; carne crua 73; queimada 55; 1 item faltando 79; fora de ordem (1 troca) 97. Erros: `burnt`, `raw`, `cooking`, `missing`, `forbidden`, `order`.
+- Ensopado = 0,8 × ponto + 0,2 × receita (fração dos 3 picados; sempre 1 no M2). Perfeito 100; `bom` 76; cru 52; queimado 20. Erros: `stew_burnt`, `stew_raw`, `cooking`. Gancho `stew_stir` saiu de `replies.json`.
+
+**Dicas** (prioridade): carne queimada "Queimou! Tire da frigideira" > panela queimada "Queimou! Toque para esvaziar" > panela passando do ponto "Arraste a tigela à janela" > carne no ponto "Tire no ponto!" > ensopado pronto "Arraste a tigela à janela" > tábua com picado "Arraste ao prato"/"Arraste à panela" > prato "Arraste o prato até a janela" > caixotes. Com item na mão: "Solte na tábua", "Solte na frigideira", "Solte os legumes na panela", "Solte no prato". Enquanto pica ou a carne está crua não há dica própria (cai na próxima da lista).

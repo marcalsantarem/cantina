@@ -5,7 +5,7 @@
 | 1 | Engine e plataforma | Decidido | Godot (4.7.2, GDScript), exportado para Web e PWA. | Definido pelo dono do projeto em 2026-11-19 |
 | 2 | Orientação | Decidido | No mobile o jogo roda só em paisagem. | Definido pelo dono do projeto em 2026-11-19 |
 | 3 | Câmera | Decidido | Câmera fixa de frente para a cozinha, sem personagem visível, em cena única (toda a bancada visível de uma vez). | Definido pelo dono do projeto em 2026-11-19 |
-| 4 | Gestos de cozinheiro | Decidido | Cada ação é um gesto (picar, virar, mexer…); a precisão define a qualidade do prato. | Definido pelo dono do projeto em 2026-11-19 |
+| 4 | Gestos de cozinheiro | Substituída | Substituída pela decisão 22 (o dono pediu para tirar movimentos e cortes). Antes: cada ação era um gesto e a precisão definia a qualidade. | Definido em 2026-11-19; revisto pelo dono em 2026-11-23 |
 | 5 | Clientes invisíveis | Decidido | Clientes não aparecem: existem nos bilhetes de pedido e no que volta pela janela. | Definido pelo dono do projeto em 2026-11-19 |
 | 6 | Ritmo | Decidido | Substitui o Zen (achado monótono): cada dia é um turno curto (~3 min) com calmaria e hora do rush. Sem derrota; ao fim do turno, 1–3 estrelas por nota e agilidade. | Revisto pelo dono do projeto em 2026-11-23 (antes: Zen, 2026-11-19) |
 | 7 | Deploy | Decidido | Netlify como no Anima: build no GitHub Actions; cada tag gera link de teste próprio. | Definido pelo dono do projeto em 2026-11-19 |
@@ -23,3 +23,4 @@
 | 19 | Cozinha viva | Decidido | Estações cozinham sozinhas com o tempo e queimam se esquecidas; o jogador faz malabarismo entre elas (picar enquanto a carne doura). | Definido pelo dono do projeto em 2026-11-23 |
 | 20 | Variedade | Decidido | Mais receitas (ensopado, vegetariano, jantar…) e pedidos com mais de um item. Pedidos malucos, eventos e clientes recorrentes ficam de fora por ora. | Definido pelo dono do projeto em 2026-11-23 |
 | 21 | Detalhes do M2 | Decidido | Tempo só no relógio de parede (11h→14h) e em placas, sem número na HUD; 1 estrela libera o próximo dia (M3); a espera pesa só na agilidade e na frase, não na nota do prato; pedido de 2 itens é servido item a item na janela. | Recomendações do AG01 aceitas pelo dono em 2026-11-23 |
+| 22 | Cozinhar simples | Decidido | Sem gestos (zigue-zague, puxão, círculos): a única interação é arrastar e soltar. Tábua pica sozinha em ~1,5 s; carne cozinha sozinha sem virar; panela cozinha sem mexer. A nota vem do ponto (tirar na hora certa), da receita certa e da agilidade. | Definido pelo dono do projeto em 2026-11-23 |

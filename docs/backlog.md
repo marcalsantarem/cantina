@@ -26,3 +26,5 @@
 | T-022 | Ressalvas do QA do M2 na cozinha: tigela x mexer (G1), fumaça preta (G2), estrelas e balanceamento (G3), panela queimada, glifos das dicas (tam. P) | M2 | AG01 | feita |
 | T-023 | Ressalvas do QA do M2 na UI: "sem X" por item no combo, aviso de pausa, balão sobre "próximo" em telas baixas (tam. P) | M2 | AG02 | feita |
 | T-024 | Etiqueta "próximo" aponta o bilhete que receberá o item carregado (sinal `delivery_target_changed`) (tam. P) | M2 | AG01 + AG02 | feita |
+| T-025 | Cozinhar simples (decisão 22): tirar picar/virar/mexer, tudo arrastar e soltar; nota por ponto, receita e agilidade (tam. M) | M2 | AG01 | feita |
+| T-026 | Validação rápida do cozinhar simples no navegador (tam. P) | M2 | AG03 | em andamento |

@@ -12,9 +12,8 @@ var layers: Array[String] = []
 ## Id de estado alternativo -> id da camada que ele ocupa (ex.: carne queimada -> carne).
 var aliases: Dictionary = {}
 var patty: String = ""
-var cut_layers: Array[String] = []
 var optional: Array[String] = []
-## Id cru -> {cuts, result, overcut, overcut_result, carry, overcut_carry}.
+## Id cru -> {result, carry} (pica sozinho na tábua, decisão 22).
 var chop: Dictionary = {}
 ## Chave curta do caixote -> id do ingrediente.
 var crates: Dictionary = {}
@@ -27,7 +26,6 @@ static func from_dict(d: Dictionary) -> Recipe:
 	r.layers.assign(d.get("layers", []))
 	r.aliases = d.get("aliases", {})
 	r.patty = d.get("patty", "")
-	r.cut_layers.assign(d.get("cut_layers", []))
 	r.optional.assign(d.get("optional", []))
 	r.chop = d.get("chop", {})
 	r.crates = d.get("crates", {})

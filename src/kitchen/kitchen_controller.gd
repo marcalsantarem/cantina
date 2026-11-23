@@ -1,9 +1,10 @@
 class_name KitchenController
 extends Node3D
-## Interação na cena da cozinha (T-007; M2 T-019): mouse/toque -> amostras normalizadas ->
-## GestureRecognizer/StirGesture; raycast nas estações (camada 2); itens 3D seguindo o
-## dedo, encaixe nos `Snap`, picar, 2 frigideiras, panela de ensopado, montar, servir item
-## a item e prato/tigela de volta. O `ShiftClock` dirige o turno (chegadas, fases, fim).
+## Interação na cena da cozinha (T-007; M2 T-019; decisão 22 T-025): mouse/toque -> amostras
+## normalizadas -> GestureRecognizer (só tocar/arrastar); raycast nas estações (camada 2);
+## itens 3D seguindo o dedo, encaixe nos `Snap`. Tábua pica sozinha, carne e ensopado
+## cozinham sozinhos; montar, servir item a item e prato/tigela de volta. O `ShiftClock`
+## dirige o turno (chegadas, fases, fim).
 ## A UI liga só pelos sinais abaixo, `get_slot_screen_position` e `start`.
 ## Slots dos bilhetes: 0..3 (= `TicketRail/Slot1..Slot4`).
 
@@ -39,20 +40,14 @@ const RETURN_S := 0.25
 const PLATE_RETURN_S := 1.5
 const NEW_PLATE_S := 1.5
 const PLATE_SCALE := 1.25
-## Meia largura (m) do ingrediente na tábua, para as faixas de cobertura.
-const CHOP_HALF_WIDTH := 0.45
 const GLOW_S := 0.35
 const GLOW_COLOR := Color(1.0, 0.92, 0.55, 0.75)
 const SLOT_COUNT := 4
 const PAN_STATIONS: Array[String] = ["Stove_Pan", "Stove_Pan2"]
 const POT_STATION := "Stove_Pot"
-## Arrastar a mais que isto (u) do centro da panela, sem volta de mexer, leva a tigela.
-const POT_LEAVE_U := 0.17
 ## Picados visíveis na panela montando: escala e deslocamento local (m) por ordem.
 const POT_ITEM_SCALE := 0.55
 const POT_ITEM_OFFSETS: Array[Vector3] = [Vector3(-0.09, 0, 0.03), Vector3(0.09, 0, 0.03), Vector3(0, 0.02, -0.08)]
-## Grude a partir do qual a dica pede para mexer (antes de grudar de vez).
-const POT_STIR_HINT_G := 0.3
 const POT_BURNT_COLOR := Color(0.08, 0.05, 0.03, 0.6)
 ## Pulso do aro de alerta: amplitude da escala e frequência (Hz).
 const ALERT_PULSE := 0.12
@@ -62,18 +57,16 @@ const NOBODY_HINT_S := 2.0
 ## Altura (m) acima da estação onde a dica aponta.
 const HINT_LIFT := 0.4
 const HINT_DROP_BOARD := "Solte na tábua"
-const HINT_DROP_PAN := "Solte na panela"
+const HINT_DROP_PAN := "Solte na frigideira"
 const HINT_DROP_PLATE := "Solte no prato"
 const HINT_DROP_POT := "Solte os legumes na panela"
-const HINT_CHOP := "Pique em zigue-zague"
-const HINT_TO_PLATE := "Arraste para o prato"
-const HINT_FLIP := "Puxe para cima para virar"
-const HINT_PATTY_DONE := "No ponto! Tire para o prato"
-const HINT_BURNT := "Queimou! Tire da panela"
+const HINT_TO_PLATE := "Arraste ao prato"
+const HINT_TO_POT := "Arraste à panela"
+const HINT_PATTY_DONE := "Tire no ponto!"
+const HINT_BURNT := "Queimou! Tire da frigideira"
 const HINT_SERVE := "Arraste o prato até a janela"
 const HINT_SERVE_BOWL := "Arraste a tigela à janela"
-const HINT_STIR := "Mexa em círculos"
-const HINT_SCRAPE := "Raspe a panela (3 voltas)"
+const HINT_POT_BURNT := "Queimou! Toque para esvaziar"
 const HINT_NOBODY := "Ninguém pediu isso agora"
 const HINT_IDLE := "Pegue um ingrediente nos caixotes"
 ## Cor/alfa da fumaça por Patty.Stage (alfa 0 = sem fumaça).
@@ -127,14 +120,11 @@ var tickets: TicketQueue
 var scorer: DishScorer
 var replies: ReplyPicker
 var recognizer: GestureRecognizer
-var stir: StirGesture
 var stack: PlateStack
 var pot: StewPot
 ## Ingrediente na tábua (null = vazia).
 var board: ChopTarget
 var pans: Array[Pan] = []
-## Faixa x (0–1) do ingrediente na tábua, para a cobertura do picar.
-var chop_area_x := Vector2.ZERO
 ## Bilhete aberto por slot (null = livre).
 var slots: Array[TicketData] = [null, null, null, null]
 ## Todos os bilhetes que chegaram no turno (para o resumo).
@@ -177,7 +167,6 @@ var _pot_model_id: String = ""
 var _pot_scale := Vector3.ONE
 var _pot_stage: int = -1
 var _pot_items: Array[Node3D] = []
-var _pot_center := Vector2.ZERO
 var _pot_alert: Node3D
 var _pot_steam: Node3D
 var _pot_bubbles: Node3D
@@ -205,7 +194,6 @@ func _ready() -> void:
 	scorer = DishScorer.new(recipe)
 	replies = ReplyPicker.new()
 	recognizer = GestureRecognizer.new()
-	stir = StirGesture.new()
 	stack = PlateStack.new(recipe)
 	pot = StewPot.new(stew_recipe)
 	_moods.resize(SLOT_COUNT)
@@ -333,6 +321,8 @@ func advance(delta: float) -> void:
 		if ev & ShiftClock.Event.ENDED:
 			_end_shift()
 			return
+	if board != null and board.tick(delta):
+		_on_chop_beat()
 	for pan in pans:
 		if pan.patty != null:
 			pan.patty.tick(delta)
@@ -387,7 +377,6 @@ func _end_shift() -> void:
 		if is_instance_valid(_carry.node):
 			_carry.node.queue_free()
 		_carry = null
-	stir.active = false
 	if _board_node != null:
 		_board_node.queue_free()
 		_board_node = null
@@ -424,42 +413,17 @@ func pointer_down(p: Vector2, t_ms: int) -> void:
 	var size := _viewport_size()
 	recognizer.aspect = size.x / maxf(size.y, 1.0)
 	_press_station = station_at(p)
-	var mode: int = GestureRecognizer.Mode.DRAG
-	match _press_station:
-		"OrderWindow":
-			_clear_returned()
-		"CuttingBoard":
-			if board != null and not board.is_done():
-				mode = GestureRecognizer.Mode.CHOP
-				_update_chop_area()
-				recognizer.set_chop_area(chop_area_x.x, chop_area_x.y)
-				board.begin_session()
-		POT_STATION:
-			if pot.portions > 0:
-				_pot_center = world_to_norm(snap_position(POT_STATION))
-				stir.aspect = recognizer.aspect
-				stir.begin(_pot_center, p, t_ms)
-		_:
-			var pan := _pan_at(_press_station)
-			if pan != null and pan.patty != null:
-				mode = GestureRecognizer.Mode.PAN
-	recognizer.begin(mode, p, t_ms)
+	if _press_station == "OrderWindow":
+		_clear_returned()
+	recognizer.begin(p, t_ms)
 	_update_hint()
 
 
 func pointer_move(p: Vector2, t_ms: int) -> void:
 	if not recognizer.active:
 		return
-	_handle_events(recognizer.add_sample(p, t_ms))
-	if stir.active:
-		if stir.add_sample(p, t_ms):
-			_on_stir_turn()
-		# Servir: sair do raio da panela sem nenhuma volta feita, qualquer que seja o
-		# ângulo (quem toca o lado oposto à janela passa pelo centro e gira ~180°).
-		if _carry == null and stir.turns == 0 and pot.portions > 0 \
-				and GestureRecognizer.distance_u(p, _pot_center, recognizer.aspect) > POT_LEAVE_U:
-			stir.active = false
-			_start_bowl_carry()
+	if recognizer.add_sample(p, t_ms) & GestureRecognizer.Event.DRAG_STARTED:
+		_start_carry()
 	if _carry != null:
 		_follow(p)
 	_update_hint()
@@ -468,15 +432,14 @@ func pointer_move(p: Vector2, t_ms: int) -> void:
 func pointer_up(p: Vector2, t_ms: int) -> void:
 	if not recognizer.active:
 		return
-	recognizer.finish(p, t_ms)
-	_handle_events(recognizer.last_events)
-	if stir.active and stir.finish(p, t_ms):
-		_on_stir_turn()
-	stir.active = false
-	if recognizer.mode == GestureRecognizer.Mode.CHOP and board != null:
-		board.end_session()
-		if recognizer.cuts > 0:
-			_feedback(board.cut_quality(), _board_node)
+	var kind := recognizer.finish(p, t_ms)
+	if recognizer.last_events & GestureRecognizer.Event.DRAG_STARTED:
+		_start_carry()
+	if kind == GestureRecognizer.Kind.TAP and _press_station == POT_STATION and pot.is_burnt():
+		# Panela queimada: um toque esvazia (sem custo).
+		pot.clear()
+		_update_pot_visuals()
+		_bump(_pot_model, _pot_scale)
 	if _carry != null:
 		_follow(p)
 		_drop(p)
@@ -522,38 +485,7 @@ func pot_item_count() -> int:
 	return _pot_items.size()
 
 
-# --- Eventos do gesto ----------------------------------------------------------
-
-func _handle_events(ev: int) -> void:
-	if ev & GestureRecognizer.Event.CUT and board != null:
-		if board.add_cut(recognizer.last_stroke_ms, recognizer.last_stroke_bands):
-			_refresh_board_model()
-		_bump(_board_node)
-	if ev & GestureRecognizer.Event.SESSION_ENDED and board != null:
-		board.end_session()
-		board.begin_session()
-	var pan := _pan_at(_press_station)
-	if ev & GestureRecognizer.Event.FLIP and pan != null and pan.patty != null:
-		var q := pan.patty.flip()
-		_flip_anim(pan)
-		_feedback(q, pan.node)
-	if ev & GestureRecognizer.Event.SHAKE and pan != null:
-		_shake(pan.area.get_node_or_null("Model"))
-	# Na panela, o arrasto só vira tigela ao sair dela (pointer_move).
-	if ev & GestureRecognizer.Event.DRAG_STARTED and _press_station != POT_STATION:
-		_start_carry()
-
-
-func _on_stir_turn() -> void:
-	var was_burnt := pot.is_burnt()
-	if not pot.stir(stir.last_quality):
-		return
-	_update_pot_visuals()
-	if was_burnt:
-		_bump(_pot_model, _pot_scale)
-	else:
-		_feedback(stir.last_quality, _pot_model)
-
+# --- Carregar e soltar ----------------------------------------------------------
 
 func _start_carry() -> void:
 	var c := Carry.new()
@@ -570,7 +502,6 @@ func _start_carry() -> void:
 		if board == null or board.carry_item_id() == "":
 			return
 		c.id = board.carry_item_id()
-		c.notes = board.notes()
 		c.chop = board
 		c.crate_key = _crate_of(board.raw_id)
 		c.node = _spawn(c.id, self)
@@ -608,18 +539,16 @@ func _start_carry() -> void:
 		else:
 			return
 		c.node.reparent(self)
+	elif _press_station == POT_STATION:
+		# Tigela automática: a porção só sai na entrega.
+		if pot.portions == 0:
+			return
+		c.is_bowl = true
+		c.id = StewPot.STEW
+		c.node = _spawn(StewPot.STEW, self)
+		c.node.global_position = snap_position(POT_STATION)
 	else:
 		return
-	_carry = c
-
-
-func _start_bowl_carry() -> void:
-	var c := Carry.new()
-	c.origin = POT_STATION
-	c.is_bowl = true
-	c.id = StewPot.STEW
-	c.node = _spawn(StewPot.STEW, self)
-	c.node.global_position = snap_position(POT_STATION)
 	_carry = c
 
 
@@ -650,7 +579,7 @@ func _drop(p: Vector2) -> void:
 				_place_in_pan(pan, c.patty if c.patty != null else Patty.new(), c.node)
 				return
 		POT_STATION:
-			if pot.add(c.id, c.notes):
+			if pot.add(c.id):
 				_place_in_pot(c.node)
 				return
 		"Plate_Assembly":
@@ -702,11 +631,14 @@ func _refresh_board_model() -> void:
 	_board_node.transform = xf
 
 
-func _update_chop_area() -> void:
-	var c := snap_position("CuttingBoard")
-	var a := world_to_norm(c - Vector3(CHOP_HALF_WIDTH, 0, 0)).x
-	var b := world_to_norm(c + Vector3(CHOP_HALF_WIDTH, 0, 0)).x
-	chop_area_x = Vector2(minf(a, b), maxf(a, b))
+## Batida da faca na tábua; na última o ingrediente vira o picado com um "pop".
+func _on_chop_beat() -> void:
+	if board.is_done():
+		_refresh_board_model()
+		_bump(_board_node, Vector3.ONE * 1.15)
+		_glow(_board_node)
+	else:
+		_bump(_board_node)
 
 
 func _place_in_pan(pan: Pan, p: Patty, node: Node3D) -> void:
@@ -727,11 +659,11 @@ func _update_pan_visuals(pan: Pan) -> void:
 		pan.node.queue_free()
 		pan.node = _spawn(id, pan.area)
 		pan.node.transform = xf
-	var stage := Patty.Stage.BURNT if pan.patty.is_burnt() else pan.patty.down_stage()
+	var stage := pan.patty.stage()
 	if stage != pan.smoke_stage:
 		pan.smoke_stage = stage
 		_set_smoke(pan.smoke, stage)
-		# Aro de alerta a partir de 10 s no lado (m2_turno §4.1).
+		# Aro de alerta quando passa do perfeito (14 s).
 		if pan.alert != null:
 			pan.alert.visible = stage >= Patty.Stage.SMOKE
 
@@ -770,13 +702,13 @@ func _update_pot_visuals() -> void:
 		_pot_model = _spawn(id, _pot_area)
 		_pot_model.transform = xf
 	_pot_stage = st
-	var cooking := st == StewPot.Stage.COOKING or st == StewPot.Stage.READY or st == StewPot.Stage.STICKING
+	var cooking := st == StewPot.Stage.COOKING or st == StewPot.Stage.READY or st == StewPot.Stage.OVERDONE
 	if _pot_steam != null:
 		_pot_steam.visible = cooking
 	if _pot_bubbles != null:
-		_pot_bubbles.visible = st >= StewPot.Stage.STICKING
+		_pot_bubbles.visible = st >= StewPot.Stage.OVERDONE
 	if _pot_alert != null:
-		_pot_alert.visible = st >= StewPot.Stage.STICKING
+		_pot_alert.visible = st >= StewPot.Stage.OVERDONE
 	if st == StewPot.Stage.BURNT:
 		_set_smoke(_pot_smoke, Patty.Stage.BURNT)
 	elif st == StewPot.Stage.SCORCHING:
@@ -798,11 +730,8 @@ func _pulse_alerts() -> void:
 
 
 func _assemble(c: Carry) -> void:
-	# A precisão da soltura vale só na nota; o visual fica centralizado (decisão 17).
-	var center := world_to_norm(snap_position("Plate_Assembly"))
-	var q := recognizer.drop_quality(center)
-	var off := recognizer.drop_offset_u(center)
-	stack.add(c.id, c.notes, q, off)
+	# Prato sempre alinhado (decisões 17 e 22): sem nota de montagem.
+	stack.add(c.id, c.notes)
 	var item: Dictionary = stack.items[-1]
 	var node := c.node
 	if c.id == Kitchen.BUN:
@@ -817,7 +746,7 @@ func _assemble(c: Carry) -> void:
 	node.scale = Vector3.ONE
 	_reparent_tween(node, plate_root, Vector3(0, _stack_height, 0))
 	_stack_height += _height_of(item["id"], node)
-	_feedback(q, node)
+	_glow(node)
 
 
 ## Entrega o prato/tigela ao bilhete mais antigo que espera a receita (m2_turno §5).
@@ -833,6 +762,7 @@ func _deliver(c: Carry) -> bool:
 		res = pot.serve()
 		if res.is_empty():
 			return false
+		_feedback(res["quality"], c.node)
 	else:
 		res = scorer.score(tk.items[idx]["without"], stack.take_all())
 	tickets.deliver(rid, res["score"], res["dominant"], clock.time)
@@ -954,30 +884,11 @@ func _tween_local(node: Node3D, local_pos: Vector3) -> void:
 	tw.tween_property(node, "position", local_pos, RETURN_S).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
-func _flip_anim(pan: Pan) -> void:
-	if pan.node == null:
-		return
-	var base := _local_snap(pan.station)
-	pan.node.position = base
-	var tw := pan.node.create_tween()
-	tw.tween_property(pan.node, "position:y", base.y + 0.6, 0.15).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(pan.node, "rotation:z", pan.node.rotation.z + PI, 0.3)
-	tw.tween_property(pan.node, "position:y", base.y, 0.15).set_ease(Tween.EASE_IN)
-
-
 func _bump(node: Node3D, base: Vector3 = Vector3.ONE) -> void:
 	if node == null:
 		return
 	node.scale = base * Vector3(1.08, 0.85, 1.08)
 	node.create_tween().tween_property(node, "scale", base, 0.12)
-
-
-func _shake(node: Node3D) -> void:
-	if node == null:
-		return
-	var tw := node.create_tween()
-	for a: float in [0.08, -0.06, 0.03, 0.0]:
-		tw.tween_property(node, "rotation:z", a, 0.05)
 
 
 ## Brilho curto no item + palavra de feedback na UI.
@@ -1188,42 +1099,32 @@ func _update_hint() -> void:
 		var pst := pot.stage()
 		var burnt_pan := ""
 		var done_pan := ""
-		var flip_pan := ""
 		for pan in pans:
 			if pan.patty == null:
 				continue
 			if pan.patty.is_burnt():
 				if burnt_pan == "":
 					burnt_pan = pan.station
-			elif _side_ok(pan.patty, Patty.Side.A) and _side_ok(pan.patty, Patty.Side.B):
-				if done_pan == "":
-					done_pan = pan.station
-			elif flip_pan == "":
-				flip_pan = pan.station
+			elif pan.patty.is_cooked() and done_pan == "":
+				done_pan = pan.station
 		if burnt_pan != "":
 			station = burnt_pan
 			text = HINT_BURNT
 		elif pst == StewPot.Stage.BURNT:
 			station = POT_STATION
-			text = HINT_SCRAPE
-		elif pst >= StewPot.Stage.STICKING:
+			text = HINT_POT_BURNT
+		elif pst >= StewPot.Stage.OVERDONE:
 			station = POT_STATION
-			text = HINT_STIR
+			text = HINT_SERVE_BOWL
 		elif done_pan != "":
 			station = done_pan
 			text = HINT_PATTY_DONE
-		elif pot.is_cooking() and pot.stick >= POT_STIR_HINT_G:
-			station = POT_STATION
-			text = HINT_STIR
 		elif pst == StewPot.Stage.READY:
 			station = POT_STATION
 			text = HINT_SERVE_BOWL
-		elif flip_pan != "":
-			station = flip_pan
-			text = HINT_FLIP
-		elif board != null:
+		elif board != null and board.is_done():
 			station = "CuttingBoard"
-			text = HINT_TO_PLATE if board.is_done() else HINT_CHOP
+			text = HINT_TO_POT if stew_recipe.layer_of(board.carry_item_id()) != "" else HINT_TO_PLATE
 		elif plate_root != null and not stack.is_empty():
 			station = "Plate_Assembly"
 			text = HINT_SERVE
@@ -1262,6 +1163,3 @@ func _hint_anchor(station: String) -> Vector3:
 		return snap_position(station) + Vector3(0, 0.6, 0)
 	return snap_position(station)
 
-
-func _side_ok(p: Patty, side: int) -> bool:
-	return Patty.quality_for_time(p.side_time(side)) != Kitchen.Quality.CLUMSY

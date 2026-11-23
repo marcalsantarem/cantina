@@ -2,19 +2,17 @@ class_name PlateStack
 extends RefCounted
 ## Pilha do prato de montagem (design §2.4). O pão inteiro solto no prato vazio vira
 ## bun_bottom na pilha + bun_top estacionado em BunTopRest. O bun_top fecha o prato.
-## Cada item: {id, quality: Dictionary, offset: Vector2 (u), tilt_deg: float}.
+## Cada item: {id, quality: Dictionary}. Sem nota de alinhamento (decisão 22).
 
 var recipe: Recipe
-var rng: RandomNumberGenerator
 var items: Array[Dictionary] = []
 ## true enquanto o bun_top espera em BunTopRest.
 var bun_top_parked: bool = false
 var closed: bool = false
 
 
-func _init(recipe_data: Recipe = null, random: RandomNumberGenerator = null) -> void:
+func _init(recipe_data: Recipe = null) -> void:
 	recipe = recipe_data if recipe_data != null else Recipe.load_burger()
-	rng = random if random != null else RandomNumberGenerator.new()
 
 
 func is_empty() -> bool:
@@ -34,10 +32,9 @@ func can_accept(item_id: String) -> bool:
 	return recipe.layer_of(item_id) != ""
 
 
-## Solta um item no prato. `notes` = notas já obtidas (corte, lados...);
-## `align` = Kitchen.Quality do alinhamento; `offset_u` = GestureRecognizer.drop_offset_u.
+## Solta um item no prato. `notes` = notas já obtidas (ponto da carne).
 ## Retorna false se o item não cabe (o chamador devolve à origem).
-func add(item_id: String, notes: Dictionary, align: int, offset_u: Vector2 = Vector2.ZERO) -> bool:
+func add(item_id: String, notes: Dictionary = {}) -> bool:
 	if not can_accept(item_id):
 		return false
 	var id := item_id
@@ -47,15 +44,7 @@ func add(item_id: String, notes: Dictionary, align: int, offset_u: Vector2 = Vec
 	elif item_id == Kitchen.BUN_TOP:
 		bun_top_parked = false
 		closed = true
-	var q := notes.duplicate()
-	q[Kitchen.NOTE_ASSEMBLY] = Kitchen.quality_score(align)
-	var max_tilt: float = Kitchen.ASSEMBLY_TILT_DEG[align]
-	items.append({
-		"id": id,
-		"quality": q,
-		"offset": offset_u.limit_length(GestureRecognizer.ALIGN_MAX_OFFSET_U),
-		"tilt_deg": rng.randf_range(-max_tilt, max_tilt),
-	})
+	items.append({"id": id, "quality": notes.duplicate()})
 	return true
 
 

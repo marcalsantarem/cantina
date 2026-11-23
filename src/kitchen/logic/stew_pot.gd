@@ -1,29 +1,22 @@
 class_name StewPot
 extends RefCounted
-## Panela do ensopado (m2_turno §4.2): aceita 1 de cada picado; com os 3 dentro cozinha
-## sozinha (tick), gruda sem mexer, rende 2 porções e queima com g = 1. Panela queimada
-## se raspa com 3 voltas. Tempo por tick(delta); nada é alocado por tick.
+## Panela do ensopado (decisão 22; m2_turno "Cozinhar simples"): aceita 1 de cada picado;
+## com os 3 dentro cozinha sozinha (tick), sem mexer; pronta aos 12 s, rende 2 porções e
+## queima se esquecida (25 s depois de pronta). Panela queimada ainda serve, ou esvazia
+## com um toque. Tempo por tick(delta); nada é alocado por tick.
 
-enum Stage { EMPTY, FILLING, COOKING, READY, STICKING, SCORCHING, BURNT }
+enum Stage { EMPTY, FILLING, COOKING, READY, OVERDONE, SCORCHING, BURNT }
 
-const READY_S := 18.0
-## Grude por segundo sem mexer: cozinhando e depois de pronto.
-const STICK_PER_S_COOKING := 1.0 / 14.0
-const STICK_PER_S_READY := 1.0 / 18.0
-## Logo depois de pronto, o grude não sobe por isto (descanso, B3 do QA M2).
-const READY_REST_S := 6.0
-## Cada volta de mexer tira isto de g.
-const STIR_RELIEF := 0.35
-const STICKING_G := 0.6
-const SCORCHING_G := 0.85
+const READY_S := 12.0
+## Ponto perfeito de READY_S até aqui; depois "bom" até queimar.
+const PERFECT_UNTIL_S := 22.0
+## Fumaça cinza (quase queimando).
+const SCORCHING_S := 31.0
+const BURNT_S := 37.0
 const PORTIONS := 2
-const SCRAPE_TURNS := 3
 
-const W_CUT := 0.30
-const W_COOK := 0.45
-const W_STIR := 0.25
-## Nota de mexer sem nenhuma volta no lote.
-const NO_STIR_SCORE := 0.4
+const W_COOK := 0.8
+const W_RECIPE := 0.2
 
 const STEW := "food_stew"
 const POT_EMPTY := "pot_A"
@@ -32,41 +25,36 @@ const POT_STEW := "pot_A_stew"
 ## Erros dominantes (chaves de gancho em replies.json).
 const ERR_BURNT := "stew_burnt"
 const ERR_RAW := "stew_raw"
-const ERR_STIR := "stew_stir"
 const ERR_COOK := "cooking"
-const ERR_CUT := "cut"
+const ERR_MISSING := "missing"
 
 var recipe: Recipe
-## Camada (id do picado) -> nota de corte (0–1).
+## Camadas (ids dos picados) já na panela.
 var contents: Dictionary = {}
 ## Porções restantes (0 = vazia ou montando).
 var portions: int = 0
 ## Segundos cozinhando no lote atual.
 var cook_time: float = 0.0
-## Grude 0–1 e o maior grude do lote.
-var stick: float = 0.0
-var max_stick: float = 0.0
-## Voltas de raspar já feitas na panela queimada.
-var scrape_turns: int = 0
-var _stir_sum: float = 0.0
-var _stir_n: int = 0
 
 
 func _init(recipe_data: Recipe = null) -> void:
 	recipe = recipe_data if recipe_data != null else Recipe.load_stew()
 
 
-## Nota do cozimento (0–1) para o tempo e o maior grude do lote.
-static func cook_score_for(time_s: float, max_g: float) -> float:
-	if max_g >= 1.0:
+## Qualidade do ponto para t segundos de cozimento (queimado vira CLUMSY, "Ops").
+static func quality_for_time(t: float) -> int:
+	if t < READY_S or t >= BURNT_S:
+		return Kitchen.Quality.CLUMSY
+	if t < PERFECT_UNTIL_S:
+		return Kitchen.Quality.PERFECT
+	return Kitchen.Quality.GOOD
+
+
+## Nota do ponto (0–1): cru 0,4; perfeito 1; bom 0,7; queimado 0.
+static func cook_score_for(t: float) -> float:
+	if t >= BURNT_S:
 		return Kitchen.SCORE_NONE
-	if time_s < READY_S:
-		return Kitchen.quality_score(Kitchen.Quality.CLUMSY)
-	if max_g <= STICKING_G:
-		return Kitchen.quality_score(Kitchen.Quality.PERFECT)
-	if max_g <= SCORCHING_G:
-		return Kitchen.quality_score(Kitchen.Quality.GOOD)
-	return Kitchen.quality_score(Kitchen.Quality.CLUMSY)
+	return Kitchen.quality_score(quality_for_time(t))
 
 
 func is_cooking() -> bool:
@@ -78,18 +66,18 @@ func is_ready() -> bool:
 
 
 func is_burnt() -> bool:
-	return portions > 0 and stick >= 1.0
+	return portions > 0 and cook_time >= BURNT_S
 
 
 func stage() -> int:
 	if portions == 0:
 		return Stage.EMPTY if contents.is_empty() else Stage.FILLING
-	if stick >= 1.0:
+	if cook_time >= BURNT_S:
 		return Stage.BURNT
-	if stick >= SCORCHING_G:
+	if cook_time >= SCORCHING_S:
 		return Stage.SCORCHING
-	if stick >= STICKING_G:
-		return Stage.STICKING
+	if cook_time >= PERFECT_UNTIL_S:
+		return Stage.OVERDONE
 	return Stage.READY if cook_time >= READY_S else Stage.COOKING
 
 
@@ -106,89 +94,53 @@ func can_accept(item_id: String) -> bool:
 	return layer != "" and not contents.has(layer)
 
 
-## Solta um picado. `notes` = ChopTarget.notes(). Com os 3 dentro, começa a cozinhar.
+## Solta um picado. Com os 3 dentro, começa a cozinhar.
 ## Retorna false se não cabe (o chamador devolve à tábua).
-func add(item_id: String, notes: Dictionary) -> bool:
+func add(item_id: String) -> bool:
 	if not can_accept(item_id):
 		return false
-	contents[recipe.layer_of(item_id)] = float(notes.get(Kitchen.NOTE_CUT, 0.0))
+	contents[recipe.layer_of(item_id)] = true
 	if contents.size() >= recipe.layers.size():
 		portions = PORTIONS
 		cook_time = 0.0
-		stick = 0.0
-		max_stick = 0.0
-		_stir_sum = 0.0
-		_stir_n = 0
 	return true
 
 
-## Avança o cozimento. Retorna true se o estágio mudou.
+## Avança o cozimento (para em BURNT_S). Retorna true se o estágio mudou.
 func tick(delta_s: float) -> bool:
-	if portions == 0 or stick >= 1.0 or delta_s <= 0.0:
+	if portions == 0 or cook_time >= BURNT_S or delta_s <= 0.0:
 		return false
 	var before := stage()
-	var t0 := cook_time
-	var t1 := cook_time + delta_s
-	var rest_end := READY_S + READY_REST_S
-	var cooking_s := maxf(minf(t1, READY_S) - t0, 0.0)
-	var ready_s := maxf(t1 - maxf(t0, rest_end), 0.0)
-	stick += cooking_s * STICK_PER_S_COOKING + ready_s * STICK_PER_S_READY
-	if stick >= 1.0 - 0.000001:
-		stick = 1.0
-	max_stick = maxf(max_stick, stick)
-	cook_time += delta_s
+	cook_time = minf(cook_time + delta_s, BURNT_S)
 	return stage() != before
 
 
-## Uma volta completa de mexer (`quality` = Kitchen.Quality, de StirGesture).
-## Cozinhando: tira 0,35 do grude e conta a nota. Queimada: conta como raspar; na 3ª
-## volta a panela esvazia. Retorna true se a volta teve efeito.
-func stir(quality: int) -> bool:
-	if portions == 0:
-		return false
-	if stick >= 1.0:
-		scrape_turns += 1
-		if scrape_turns >= SCRAPE_TURNS:
-			clear()
-		return true
-	stick = maxf(stick - STIR_RELIEF, 0.0)
-	_stir_sum += Kitchen.quality_score(quality)
-	_stir_n += 1
-	return true
-
-
-func stir_score() -> float:
-	return NO_STIR_SCORE if _stir_n == 0 else _stir_sum / _stir_n
-
-
-func cut_score() -> float:
-	if contents.is_empty():
-		return 0.0
-	var sum := 0.0
-	for v: float in contents.values():
-		sum += v
-	return sum / recipe.layers.size()
+func cook_quality() -> int:
+	return quality_for_time(cook_time)
 
 
 func cook_score() -> float:
-	return cook_score_for(cook_time, max_stick)
+	return cook_score_for(cook_time)
 
 
-## Nota de uma porção agora (sem servir): {score, band, dominant, components}.
+## Receita certa: fração das camadas na panela (sempre 1 cozinhando, no M2).
+func recipe_score() -> float:
+	return float(contents.size()) / maxf(recipe.layers.size(), 1)
+
+
+## Nota de uma porção agora (sem servir): {score, band, dominant, components, quality}.
 func evaluate() -> Dictionary:
-	var cut := cut_score()
 	var cook := cook_score()
-	var stir_s := stir_score()
-	var s := clampi(roundi(100.0 * (W_CUT * cut + W_COOK * cook + W_STIR * stir_s)), 0, 100)
+	var rec := recipe_score()
+	var s := clampi(roundi(100.0 * (W_COOK * cook + W_RECIPE * rec)), 0, 100)
 	var cook_err := ERR_COOK
-	if max_stick >= 1.0:
+	if cook_time >= BURNT_S:
 		cook_err = ERR_BURNT
 	elif cook_time < READY_S:
 		cook_err = ERR_RAW
 	var losses := [
 		[cook_err, W_COOK * (1.0 - cook)],
-		[ERR_STIR, W_STIR * (1.0 - stir_s)],
-		[ERR_CUT, W_CUT * (1.0 - cut)],
+		[ERR_MISSING, W_RECIPE * (1.0 - rec)],
 	]
 	var dominant := ""
 	var best := 0.0005
@@ -200,7 +152,8 @@ func evaluate() -> Dictionary:
 		"score": s,
 		"band": DishScorer.band_of(s),
 		"dominant": dominant,
-		"components": {"cut": cut, "cook": cook, "stir": stir_s},
+		"quality": cook_quality(),
+		"components": {"cook": cook, "recipe": rec},
 	}
 
 
@@ -221,8 +174,3 @@ func clear() -> void:
 	contents.clear()
 	portions = 0
 	cook_time = 0.0
-	stick = 0.0
-	max_stick = 0.0
-	scrape_turns = 0
-	_stir_sum = 0.0
-	_stir_n = 0

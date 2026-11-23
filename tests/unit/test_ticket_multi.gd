@@ -102,9 +102,9 @@ func test_ticket_hook_worst_item_or_late() -> void:
 	var t := _done_ticket([90, 60], ["", "raw"])
 	assert_eq(ReplyPicker.ticket_hook(t, 1.0), "raw", "gancho do pior item")
 	assert_eq(ReplyPicker.ticket_hook(t, 0.5), "raw", "nota < 80: erro manda")
-	var good := _done_ticket([95, 85], ["stew_stir", "cut"])
+	var good := _done_ticket([95, 85], ["stew_raw", "order"])
 	assert_eq(ReplyPicker.ticket_hook(good, 0.69), ReplyPicker.HOOK_LATE, "nota >= 80 e demorou")
-	assert_eq(ReplyPicker.ticket_hook(good, 0.7), "cut")
+	assert_eq(ReplyPicker.ticket_hook(good, 0.7), "order")
 	var clean := _done_ticket([70], [""])
 	assert_eq(ReplyPicker.ticket_hook(clean, 0.5), ReplyPicker.HOOK_LATE, "sem erro: demora")
 
@@ -127,7 +127,7 @@ func test_pick_ticket_uses_recipe_bands_and_hooks() -> void:
 
 func test_reply_data_has_m2_hooks() -> void:
 	var picker := ReplyPicker.new()
-	for key in [StewPot.ERR_BURNT, StewPot.ERR_RAW, StewPot.ERR_STIR, ReplyPicker.HOOK_LATE]:
+	for key in [StewPot.ERR_BURNT, StewPot.ERR_RAW, ReplyPicker.HOOK_LATE]:
 		assert_true(picker.has_hook(key), key)
 	for key in ReplyPicker.BAND_KEYS:
 		assert_gt((picker.recipe_bands["food_stew"][key] as Array).size(), 0, key)

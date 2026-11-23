@@ -1,7 +1,8 @@
 extends GutTest
 ## KitchenController na cena real (sem janela): amostras normalizadas -> raycast nas
-## estações -> gestos -> servir. M1: hambúrguer completo; M2: turno acelerado com
-## `advance`, duas frigideiras, ensopado do picar ao servir, entrega item a item, fim.
+## estações -> arrastar/soltar -> servir. M1: hambúrguer completo; M2: turno acelerado com
+## `advance`, duas frigideiras, ensopado da tábua ao servir, entrega item a item, fim.
+## Decisão 22: tábua pica sozinha, carne e panela cozinham sozinhas (sem gestos).
 
 const GAME := preload("res://scenes/game/game.tscn")
 
@@ -61,39 +62,9 @@ func _st(station: String) -> Vector2:
 	return _n(ctrl.snap_position(station))
 
 
-## Zigue-zague: 6 traços de 200 ms, Δy = 0,08, pontas varrendo a largura do ingrediente.
-func _chop_six() -> void:
-	var c := _st("CuttingBoard")
-	var top := c.y - 0.04
-	var bottom := c.y + 0.04
-	# A faixa só é conhecida depois do toque; usa a mesma conta do controlador.
-	var half := ctrl.world_to_norm(ctrl.snap_position("CuttingBoard") + Vector3(KitchenController.CHOP_HALF_WIDTH, 0, 0)).x - c.x
-	var x0 := c.x - half * 0.9
-	var x1 := c.x + half * 0.9
-	var prev := Vector2(x0, top)
-	ctrl.pointer_down(prev, t)
-	for k in range(1, 7):
-		var nxt := Vector2(lerpf(x0, x1, k / 6.0), bottom if k % 2 == 1 else top)
-		for s in range(1, 5):
-			t += 50
-			ctrl.pointer_move(prev.lerp(nxt, s / 4.0), t)
-		prev = nxt
-	t += 10
-	ctrl.pointer_up(prev, t)
-
-
-## Mexe `turns` voltas de 800 ms com raio 0,06 u em torno do centro da panela.
-func _stir(turns: int) -> void:
-	var c := _st("Stove_Pot")
-	var size := ctrl._viewport_size()
-	var aspect := size.x / size.y
-	ctrl.pointer_down(c, t)
-	for k in range(0, turns * 16 + 1):
-		t += 50
-		var a := TAU * k / 16.0
-		ctrl.pointer_move(c + Vector2(0.06 * cos(a) / aspect, 0.06 * sin(a)), t)
-	t += 16
-	ctrl.pointer_up(c + Vector2(0.06 / aspect, 0), t)
+## Espera a tábua picar sozinha.
+func _chop() -> void:
+	ctrl.advance(ChopTarget.CHOP_S + 0.05)
 
 
 func _labels() -> Array:
@@ -112,14 +83,11 @@ func _hint_texts() -> Array:
 	return out
 
 
-## Põe o ensopado pronto na panela pela lógica (sem gestos), mexendo para não grudar.
+## Põe o ensopado pronto na panela pela lógica (sem arrastar os picados).
 func _cook_stew() -> void:
 	for id in ctrl.stew_recipe.layers:
-		ctrl.pot.add(id, {Kitchen.NOTE_CUT: 1.0})
-	while not ctrl.pot.is_ready():
-		ctrl.advance(4.0)
-		ctrl.pot.stir(Kitchen.Quality.PERFECT)
-	ctrl.advance(0.1)
+		ctrl.pot.add(id)
+	ctrl.advance(StewPot.READY_S + 0.1)
 
 
 func test_station_raycast() -> void:
@@ -164,33 +132,33 @@ func test_full_burger_served() -> void:
 	assert_eq(ctrl.stack.ids(), [Kitchen.BUN_BOTTOM] as Array[String])
 	assert_true(ctrl.stack.bun_top_parked)
 
-	# Carne: frigideira 1, 8 s, puxão para cima, 8 s, tirar e montar.
+	assert_eq(feedback.size(), 0, "montar não dá nota")
+
+	# Carne: frigideira 1, cozinha sozinha 11 s (perfeito), tirar e montar.
 	var pan := _st("Stove_Pan")
 	_drag(_st("Crate_burger"), pan)
 	assert_not_null(ctrl.pans[0].patty)
-	ctrl.advance(8.0)
-	feedback.clear()
-	_drag(pan, pan + Vector2(0, -0.16), 6)
-	assert_eq(ctrl.pans[0].patty.side_down, Patty.Side.B, "virou")
-	assert_eq(_labels(), ["Perfeito!"])
-	ctrl.advance(8.0)
+	ctrl.advance(11.0)
 	assert_eq(ctrl.pans[0].patty.model_id(), Kitchen.BURGER_COOKED)
 	_drag(pan, _plate())
 	assert_null(ctrl.pans[0].patty)
+	assert_eq(_labels(), ["Perfeito!"], "nota do ponto ao tirar")
 
 	_drag(_st("Crate_cheese"), _plate())
 
-	# Alface e tomate: tábua, 6 cortes, arrastar para o prato.
+	# Alface e tomate: soltar na tábua, pica sozinho, arrastar para o prato.
 	var board := _st("CuttingBoard")
 	for crate in ["Crate_lettuce", "Crate_tomato"]:
 		_drag(_st(crate), board)
 		assert_not_null(ctrl.board, crate + " na tábua")
-		feedback.clear()
-		_chop_six()
-		assert_eq(ctrl.board.cuts, 6, crate + " cortes")
-		assert_eq(_labels(), ["Perfeito!"], crate + " corte")
+		_drag(board, _plate())
+		assert_not_null(ctrl.board, crate + " cru não sai da tábua")
+		assert_false(ctrl.is_carrying())
+		_chop()
+		assert_true(ctrl.board.is_done(), crate + " picado")
 		_drag(board, _plate())
 		assert_null(ctrl.board)
+	assert_eq(_labels(), ["Perfeito!"], "picar e montar não dão nota")
 
 	# Pão de cima, do descanso para o prato.
 	_drag(_n(ctrl.bun_top_rest_position()), _plate())
@@ -235,10 +203,10 @@ func test_full_burger_served() -> void:
 	ctrl.pointer_up(_window(), t + 50)
 	assert_null(ctrl.returned_plate, "some ao tocar")
 
-	var cut_hints := ["Solte na tábua", "Pique em zigue-zague", "Arraste para o prato", "Solte no prato", "Arraste o prato até a janela"]
+	var cut_hints := ["Solte na tábua", "Arraste o prato até a janela", "Arraste ao prato", "Solte no prato", "Arraste o prato até a janela"]
 	var expected := ["Pegue um ingrediente nos caixotes",
 		"Solte no prato", "Arraste o prato até a janela",
-		"Solte na panela", "Puxe para cima para virar", "No ponto! Tire para o prato",
+		"Solte na frigideira", "Arraste o prato até a janela", "Tire no ponto!",
 		"Solte no prato", "Arraste o prato até a janela",
 		"Solte no prato", "Arraste o prato até a janela"]
 	expected.append_array(cut_hints)
@@ -256,7 +224,7 @@ func test_hint_positions_and_no_repeat() -> void:
 	for i in range(1, 13):
 		t += 16
 		ctrl.pointer_move(crate.lerp(pan, i / 12.0), t)
-	assert_eq(hints[-1][0], "Solte na panela")
+	assert_eq(hints[-1][0], "Solte na frigideira")
 	var n := hints.size()
 	ctrl.advance(0.1)
 	ctrl.advance(0.1)
@@ -265,7 +233,9 @@ func test_hint_positions_and_no_repeat() -> void:
 	assert_almost_eq(hints[-1][1], pan_px, Vector2.ONE, "dica na panela")
 	t += 16
 	ctrl.pointer_up(pan, t)
-	assert_eq(hints[-1][0], "Puxe para cima para virar")
+	assert_eq(hints[-1][0], "Pegue um ingrediente nos caixotes", "carne crua cozinha sozinha")
+	ctrl.advance(8.0)
+	assert_eq(hints[-1][0], "Tire no ponto!")
 
 
 func test_two_pans_independent() -> void:
@@ -284,14 +254,13 @@ func test_two_pans_independent() -> void:
 	ctrl.pointer_up(p2, t)
 	assert_not_null(ctrl.pans[1].patty)
 	ctrl.advance(4.0)
-	assert_almost_eq(ctrl.pans[0].patty.time_a, 8.0, 0.01)
-	assert_almost_eq(ctrl.pans[1].patty.time_a, 4.0, 0.01)
-	_drag(p2, p2 + Vector2(0, -0.16), 6)
-	assert_eq(ctrl.pans[1].patty.side_down, Patty.Side.B, "virou a 2ª")
-	assert_eq(ctrl.pans[0].patty.side_down, Patty.Side.A, "1ª intacta")
+	assert_almost_eq(ctrl.pans[0].patty.time, 8.0, 0.01)
+	assert_almost_eq(ctrl.pans[1].patty.time, 4.0, 0.01)
+	assert_eq(ctrl.pans[0].patty.model_id(), Kitchen.BURGER_COOKED, "1ª no ponto")
+	assert_eq(ctrl.pans[1].patty.model_id(), Kitchen.BURGER_UNCOOKED, "2ª ainda crua")
 	assert_false(ctrl.pans[0].alert.visible)
-	ctrl.advance(2.5)
-	assert_true(ctrl.pans[0].alert.visible, "aro aos 10 s no lado")
+	ctrl.advance(6.5)
+	assert_true(ctrl.pans[0].alert.visible, "aro ao passar do perfeito (14 s)")
 	assert_false(ctrl.pans[1].alert.visible)
 	# Tirar a 1ª não mexe na 2ª.
 	_drag(p1, _plate())
@@ -300,15 +269,16 @@ func test_two_pans_independent() -> void:
 	assert_not_null(ctrl.pans[1].patty)
 
 
-func test_stew_from_chop_to_serve() -> void:
+func test_stew_from_board_to_serve() -> void:
 	var ticket := ctrl.spawn_order(["food_stew"])
 	var board := _st("CuttingBoard")
 	var pot := _st("Stove_Pot")
 	for crate in ["Crate_carrot", "Crate_potato", "Crate_onion"]:
 		_drag(_st(crate), board)
 		assert_not_null(ctrl.board, crate + " na tábua")
-		_chop_six()
+		_chop()
 		assert_true(ctrl.board.is_done(), crate + " picado")
+		assert_eq(hints[-1][0], "Arraste à panela")
 		ctrl.pointer_down(board, t)
 		for i in range(1, 13):
 			t += 16
@@ -326,30 +296,29 @@ func test_stew_from_chop_to_serve() -> void:
 
 	# Picado repetido volta à tábua.
 	_drag(_st("Crate_carrot"), board)
-	_chop_six()
+	_chop()
 	_drag(board, pot)
 	assert_not_null(ctrl.board, "cenoura repetida voltou")
 	_drag(board, _st("Crate_carrot"))
+	assert_null(ctrl.board, "devolvida ao caixote")
 
-	ctrl.advance(5.0)
-	assert_eq(hints[-1][0], "Mexa em círculos")
+	# Tocar a panela cozinhando não faz nada; cozinha sozinha até ficar pronta.
+	ctrl.pointer_down(pot, t)
+	ctrl.pointer_up(pot, t + 50)
+	assert_eq(ctrl.pot.portions, 2)
 	feedback.clear()
-	var g := ctrl.pot.stick
-	_stir(2)
-	assert_eq(feedback.size(), 2, "2 voltas")
-	assert_lt(ctrl.pot.stick, g, "mexer tira grude")
-	assert_eq(ctrl.pot.portions, 2, "mexer não serve")
 	while not ctrl.pot.is_ready():
-		ctrl.advance(3.0)
-		_stir(1)
-	ctrl.advance(0.1)
+		ctrl.advance(1.0)
+	assert_eq(hints[-1][0], "Arraste a tigela à janela")
+	assert_eq(feedback.size(), 0, "cozinhar não dá nota")
 
 	_drag(pot, _window())
+	assert_eq(_labels(), ["Perfeito!"], "nota do ponto ao servir a tigela")
 	assert_eq(delivered.size(), 1)
 	assert_eq(served.size(), 1)
 	if served.size() == 1:
 		assert_eq(served[0][1], ticket)
-		assert_gt(served[0][2], 50, "ensopado bem feito")
+		assert_eq(served[0][2], 100, "ensopado no ponto")
 	assert_eq(ctrl.pot.portions, 1, "sobrou 1 porção")
 	ctrl.advance(1.6)
 	assert_not_null(ctrl.returned_plate)
@@ -360,6 +329,7 @@ func test_stew_from_chop_to_serve() -> void:
 	assert_false(ctrl.is_carrying())
 	assert_eq(ctrl.pot.portions, 1)
 	assert_eq(hints[-1][0], "Ninguém pediu isso agora")
+	assert_eq(feedback.size(), 1, "sem nota quando ninguém recebe")
 
 
 func test_combo_delivered_item_by_item() -> void:
@@ -505,13 +475,35 @@ func test_pause_changed_signal_and_click_resumes() -> void:
 	assert_eq(pauses, [true, false], "já estava retomado")
 
 
-func test_burnt_pot_hint_is_scrape() -> void:
+func test_forgotten_pot_burns_and_tap_empties() -> void:
 	ctrl.start()
 	for id in ctrl.stew_recipe.layers:
-		ctrl.pot.add(id, {Kitchen.NOTE_CUT: 1.0})
-	ctrl.advance(15.0)
+		ctrl.pot.add(id)
+	ctrl.advance(StewPot.PERFECT_UNTIL_S + 1.0)
+	assert_eq(hints[-1][0], "Arraste a tigela à janela", "passando do ponto: servir")
+	assert_true(ctrl._pot_alert.visible, "aro ao passar do ponto")
+	ctrl.advance(StewPot.BURNT_S)
 	assert_true(ctrl.pot.is_burnt())
-	assert_eq(hints[-1][0], "Raspe a panela (3 voltas)")
+	assert_eq(hints[-1][0], "Queimou! Toque para esvaziar")
+	var pot := _st("Stove_Pot")
+	ctrl.pointer_down(pot, t)
+	ctrl.pointer_up(pot, t + 50)
+	assert_eq(ctrl.pot.stage(), StewPot.Stage.EMPTY, "um toque esvazia")
+	assert_eq(ctrl.pot_model_id(), StewPot.POT_EMPTY)
+	assert_false(ctrl._pot_alert.visible)
+
+
+func test_burnt_patty_hint_and_feedback() -> void:
+	var pan := _st("Stove_Pan")
+	_drag(_st("Crate_burger"), pan)
+	ctrl.advance(Patty.BURNT_S + 0.5)
+	assert_eq(hints[-1][0], "Queimou! Tire da frigideira")
+	assert_eq(ctrl.pans[0].patty.model_id(), Kitchen.BURGER_TRASH)
+	feedback.clear()
+	_drag(pan, _st("Crate_burger"))
+	assert_eq(_labels(), ["Ops"])
+	assert_null(ctrl.pans[0].patty)
+	assert_false(ctrl.is_carrying(), "devolvida ao caixote")
 
 
 func test_smoke_uses_round_soft_texture() -> void:

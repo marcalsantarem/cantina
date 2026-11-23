@@ -33,11 +33,8 @@ func _drag(a: Vector2, b: Vector2, steps: int = 12) -> void:
 
 func _cook_stew() -> void:
 	for id in ctrl.stew_recipe.layers:
-		ctrl.pot.add(id, {Kitchen.NOTE_CUT: 1.0})
-	while not ctrl.pot.is_ready():
-		ctrl.advance(4.0)
-		ctrl.pot.stir(Kitchen.Quality.PERFECT)
-	ctrl.advance(0.1)
+		ctrl.pot.add(id)
+	ctrl.advance(StewPot.READY_S + 0.1)
 
 
 ## Q-G1: tocar a panela no lado de baixo/esquerdo e arrastar até a janela (cima/direita)

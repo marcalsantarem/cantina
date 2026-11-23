@@ -1,16 +1,16 @@
 class_name DishScorer
 extends RefCounted
-## Nota do prato 0–100 (design §4) = round(100 × Σ peso·componente), faixa e erro dominante.
+## Nota do prato 0–100 (decisão 22) = round(100 × Σ peso·componente), faixa e erro dominante.
+## Componentes: ponto da carne, receita certa (itens e "sem") e ordem das camadas.
 
 enum Band { GREAT, OK, POOR }
 
-const W_CUT := 0.20
-const W_COOK := 0.35
-const W_ALIGN := 0.15
-const W_ORDER := 0.15
-const W_ORDER_MATCH := 0.15
+const W_COOK := 0.45
+const W_RECIPE := 0.35
+const W_ORDER := 0.20
 const GREAT_MIN := 80
 const OK_MIN := 50
+## Cada item faltando ou proibido tira isto da nota de receita (mín. 0).
 const PENALTY_PER_ITEM := 0.5
 
 ## Chaves de erro dominante ("" = nenhum).
@@ -20,8 +20,6 @@ const ERR_MISSING := "missing"
 const ERR_ORDER := "order"
 const ERR_RAW := "raw"
 const ERR_COOK := "cooking"
-const ERR_CUT := "cut"
-const ERR_ALIGN := "alignment"
 
 ## Modelo que volta pela janela, por faixa ("" = o prato como foi).
 const RETURN_MODEL: Array[String] = ["plate", "plate_dirty", ""]
@@ -44,7 +42,7 @@ static func band_of(score: int) -> int:
 
 
 ## `without` = TicketData.without; `items` = PlateStack.items (de baixo para cima).
-## Retorna {score, band, dominant, components: {cut, cook, align, order, order_match}}.
+## Retorna {score, band, dominant, components: {cook, recipe, order}}.
 func score(without: Array, items: Array) -> Dictionary:
 	var requested := recipe.requested_layers(without)
 	# Primeiro item de cada camada pedida presente no prato; sequência de camadas do prato.
@@ -65,28 +63,20 @@ func score(without: Array, items: Array) -> Dictionary:
 		if not found.has(layer):
 			missing += 1
 
-	var cut := _avg_note(requested, found, recipe.cut_layers, Kitchen.NOTE_CUT)
 	var cook := 0.0
 	var burnt := false
-	var min_side := 1.0
 	var patty_present := found.has(recipe.patty)
 	if not requested.has(recipe.patty):
 		cook = 1.0
 	elif patty_present:
-		var q: Dictionary = found[recipe.patty].get("quality", {})
-		var a: float = q.get(Kitchen.NOTE_SIDE_A, 0.0)
-		var b: float = q.get(Kitchen.NOTE_SIDE_B, 0.0)
-		cook = (a + b) / 2.0
-		min_side = minf(a, b)
-		burnt = found[recipe.patty].get("id", "") == Kitchen.BURGER_TRASH \
-				or (q.has(Kitchen.NOTE_SIDE_A) and a <= 0.0) or (q.has(Kitchen.NOTE_SIDE_B) and b <= 0.0)
-	var align := _avg_note(requested, found, requested, Kitchen.NOTE_ASSEMBLY)
+		cook = float(found[recipe.patty].get("quality", {}).get(Kitchen.NOTE_COOK, 0.0))
+		burnt = found[recipe.patty].get("id", "") == Kitchen.BURGER_TRASH or cook <= 0.0
 	var order := 1.0
 	if not requested.is_empty():
 		order = float(_lcs(requested, plate_layers)) / requested.size()
-	var order_match := maxf(1.0 - PENALTY_PER_ITEM * (forbidden + missing), 0.0)
+	var recipe_ok := maxf(1.0 - PENALTY_PER_ITEM * (forbidden + missing), 0.0)
 
-	var total := W_CUT * cut + W_COOK * cook + W_ALIGN * align + W_ORDER * order + W_ORDER_MATCH * order_match
+	var total := W_COOK * cook + W_RECIPE * recipe_ok + W_ORDER * order
 	var s := clampi(roundi(100.0 * total), 0, 100)
 
 	var cook_err := ERR_COOK
@@ -95,15 +85,13 @@ func score(without: Array, items: Array) -> Dictionary:
 			cook_err = ERR_MISSING
 		elif burnt:
 			cook_err = ERR_BURNT
-		elif min_side < Kitchen.quality_score(Kitchen.Quality.GOOD) - 0.001:
+		elif cook < Kitchen.quality_score(Kitchen.Quality.GOOD) - 0.001:
 			cook_err = ERR_RAW
 	# Ordem do array = desempate por prioridade.
 	var losses := [
 		[cook_err, W_COOK * (1.0 - cook)],
-		[ERR_FORBIDDEN if forbidden > 0 else ERR_MISSING, W_ORDER_MATCH * (1.0 - order_match)],
+		[ERR_FORBIDDEN if forbidden > 0 else ERR_MISSING, W_RECIPE * (1.0 - recipe_ok)],
 		[ERR_ORDER, W_ORDER * (1.0 - order)],
-		[ERR_CUT, W_CUT * (1.0 - cut)],
-		[ERR_ALIGN, W_ALIGN * (1.0 - align)],
 	]
 	var dominant := ""
 	var best := 0.0005
@@ -115,7 +103,7 @@ func score(without: Array, items: Array) -> Dictionary:
 		"score": s,
 		"band": band_of(s),
 		"dominant": dominant,
-		"components": {"cut": cut, "cook": cook, "align": align, "order": order, "order_match": order_match},
+		"components": {"cook": cook, "recipe": recipe_ok, "order": order},
 	}
 
 
@@ -126,20 +114,6 @@ static func return_model(band: int) -> String:
 ## Modelo que volta para um item da receita (tigela no ensopado, prato no resto).
 static func return_model_for(recipe_id: String, band: int) -> String:
 	return RETURN_MODEL_BOWL[band] if recipe_id == StewPot.STEW else RETURN_MODEL[band]
-
-
-## Média da nota `key` sobre as camadas pedidas que estão em `subset`; ausente = 0.
-## Sem camadas no subconjunto pedido: 1 (nada a errar).
-func _avg_note(requested: Array[String], found: Dictionary, subset: Array[String], key: String) -> float:
-	var n := 0
-	var sum := 0.0
-	for layer in requested:
-		if not subset.has(layer):
-			continue
-		n += 1
-		if found.has(layer):
-			sum += float(found[layer].get("quality", {}).get(key, 0.0))
-	return 1.0 if n == 0 else sum / n
 
 
 ## Maior subsequência comum (posições corretas, aceitando itens fora de ordem/extras).
