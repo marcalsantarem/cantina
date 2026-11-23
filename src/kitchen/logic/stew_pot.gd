@@ -2,17 +2,17 @@ class_name StewPot
 extends RefCounted
 ## Panela do ensopado (decisão 22; m2_turno "Cozinhar simples"): aceita 1 de cada picado;
 ## com os 3 dentro cozinha sozinha (tick), sem mexer; pronta aos 12 s, rende 2 porções e
-## queima se esquecida (25 s depois de pronta). Panela queimada ainda serve, ou esvazia
+## queima se esquecida (18 s depois de pronta). Panela queimada ainda serve, ou esvazia
 ## com um toque. Tempo por tick(delta); nada é alocado por tick.
 
 enum Stage { EMPTY, FILLING, COOKING, READY, OVERDONE, SCORCHING, BURNT }
 
 const READY_S := 12.0
 ## Ponto perfeito de READY_S até aqui; depois "bom" até queimar.
-const PERFECT_UNTIL_S := 22.0
+const PERFECT_UNTIL_S := 20.0
 ## Fumaça cinza (quase queimando).
-const SCORCHING_S := 31.0
-const BURNT_S := 37.0
+const SCORCHING_S := 25.0
+const BURNT_S := 30.0
 const PORTIONS := 2
 
 const W_COOK := 0.8

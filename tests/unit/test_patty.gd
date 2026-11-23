@@ -6,12 +6,12 @@ func test_grade_bands() -> void:
 	assert_eq(Patty.grade_time(0.0), 0.4, "cru")
 	assert_eq(Patty.grade_time(7.99), 0.4)
 	assert_eq(Patty.grade_time(8.0), 0.7, "no ponto a partir de 8 s")
-	assert_eq(Patty.grade_time(10.0), 1.0, "perfeito 10–14 s")
-	assert_eq(Patty.grade_time(13.99), 1.0)
-	assert_eq(Patty.grade_time(14.0), 0.7)
-	assert_eq(Patty.grade_time(19.99), 0.7)
-	assert_eq(Patty.grade_time(20.0), 0.0, "queimada aos 20 s")
-	assert_eq(Patty.quality_for_time(20.0), Kitchen.Quality.CLUMSY)
+	assert_eq(Patty.grade_time(10.0), 1.0, "perfeito 10–12,5 s")
+	assert_eq(Patty.grade_time(12.49), 1.0)
+	assert_eq(Patty.grade_time(12.5), 0.7)
+	assert_eq(Patty.grade_time(17.99), 0.7)
+	assert_eq(Patty.grade_time(18.0), 0.0, "queimada aos 18 s")
+	assert_eq(Patty.quality_for_time(18.0), Kitchen.Quality.CLUMSY)
 
 
 func test_stages() -> void:
@@ -19,7 +19,7 @@ func test_stages() -> void:
 	assert_eq(Patty.stage_for_time(9.0), Patty.Stage.MEDIUM)
 	assert_eq(Patty.stage_for_time(11.0), Patty.Stage.GLOW)
 	assert_eq(Patty.stage_for_time(15.0), Patty.Stage.SMOKE)
-	assert_eq(Patty.stage_for_time(21.0), Patty.Stage.BURNT)
+	assert_eq(Patty.stage_for_time(19.0), Patty.Stage.BURNT)
 
 
 func test_only_cooks_in_pan() -> void:

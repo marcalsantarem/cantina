@@ -28,26 +28,26 @@ func _run(c: ShiftClock, seconds: float, open: int) -> void:
 		left -= d
 
 
-func test_ideal_schedule_has_10_tickets() -> void:
-	assert_eq(ShiftClock.ideal_schedule(), [3.0, 25.0, 47.0, 63.0, 79.0, 95.0, 111.0, 127.0, 143.0, 163.0])
+func test_ideal_schedule_has_11_tickets() -> void:
+	assert_eq(ShiftClock.ideal_schedule(), [3.0, 25.0, 47.0, 60.0, 73.0, 86.0, 99.0, 112.0, 125.0, 138.0, 158.0])
 
 
 func test_arrivals_without_delay_follow_schedule() -> void:
 	var times := _arrival_times(0.1)
-	assert_eq(times.size(), 10)
+	assert_eq(times.size(), 11)
 	for i in times.size():
 		assert_almost_eq(times[i], ShiftClock.ideal_schedule()[i], 0.001)
-	assert_eq(clock.arrivals_total, 10)
+	assert_eq(clock.arrivals_total, 11)
 
 
 func test_large_tick_does_not_skip_arrivals() -> void:
 	clock.tick(50.0, 0)
 	assert_eq(clock.arrivals_this_tick, 3, "3, 25 e 47 num tick só")
-	assert_eq(clock.next_arrival_s, 63.0)
+	assert_eq(clock.next_arrival_s, 60.0)
 
 
 func test_arrivals_in_same_tick_count_as_open() -> void:
-	clock.tick(80.0, 0)   # 3, 25, 47, 63 -> 4 abertos; 79 espera vaga
+	clock.tick(80.0, 0)   # 3, 25, 47, 60 -> 4 abertos; 73 espera vaga
 	assert_eq(clock.arrivals_total, 4)
 	assert_true(clock.waiting_vacancy)
 
@@ -101,27 +101,27 @@ func test_rush_max_frees_waiting_arrival() -> void:
 	assert_true(clock.waiting_vacancy)
 	clock.tick(20.0, 2)   # aos 45 s o máximo vira 4 -> chega aos 49 s
 	assert_eq(clock.arrivals_total, 2)
-	assert_almost_eq(clock.next_arrival_s, 65.0, 0.001, "49 + 16")
+	assert_almost_eq(clock.next_arrival_s, 62.0, 0.001, "49 + 13")
 
 
 func test_no_arrivals_in_last_orders() -> void:
-	_run(clock, 164.0, 0)   # 143 e 163 chegaram; agenda 183 (>= 165) -> nada
-	assert_eq(clock.arrivals_total, 10)
+	_run(clock, 164.0, 0)   # 138 e 158 chegaram; agenda 178 (>= 165) -> nada
+	assert_eq(clock.arrivals_total, 11)
 	_run(clock, 16.0, 0)
-	assert_eq(clock.arrivals_total, 10)
+	assert_eq(clock.arrivals_total, 11)
 	assert_eq(clock.next_arrival_s, INF)
 
 
 func test_delayed_arrival_after_165_is_dropped() -> void:
-	_run(clock, 140.0, 0)
-	_run(clock, 5.0, 3)     # 143 devida, cheia (3)
+	_run(clock, 130.0, 0)
+	_run(clock, 10.0, 3)    # 138 devida, cheia (3)
 	assert_true(clock.waiting_vacancy)
 	assert_eq(clock.held_arrivals, 1)
-	_run(clock, 21.0, 3)    # a agenda fantasma passa pelos 163
+	_run(clock, 21.0, 3)    # a agenda fantasma passa pelos 158
 	assert_eq(clock.held_arrivals, 2)
-	_run(clock, 1.0, 2)     # vaga aos 166 -> 170 >= 165: não chega
+	_run(clock, 1.0, 2)     # vaga aos 161 -> 165 >= 165: não chega
 	_run(clock, 10.0, 2)
-	assert_eq(clock.arrivals_total, 8)
+	assert_eq(clock.arrivals_total, 9)
 	assert_eq(clock.held_arrivals, 2, "as 2 seguradas contam no atendimento")
 
 
@@ -148,9 +148,9 @@ func test_order_for_rolls() -> void:
 	var s := ShiftClock.STEW
 	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.OPENING, 0.0, 0.59), [b])
 	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.OPENING, 0.0, 0.6), [s])
-	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.RUSH, 0.39, 0.74), [b, s])
-	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.RUSH, 0.39, 0.75), [b, b])
-	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.RUSH, 0.4, 0.1), [b])
+	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.RUSH, 0.49, 0.74), [b, s])
+	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.RUSH, 0.49, 0.75), [b, b])
+	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.RUSH, 0.5, 0.1), [b])
 	assert_eq(ShiftClock.order_for_rolls(ShiftClock.Phase.CLOSING, 0.0, 0.1), [b])
 
 
@@ -167,5 +167,5 @@ func test_roll_order_mix_by_phase() -> void:
 			combos += 1
 		elif o[0] == ShiftClock.STEW:
 			stews += 1
-	assert_almost_eq(float(combos) / n, 0.4, 0.04)
+	assert_almost_eq(float(combos) / n, 0.5, 0.04)
 	assert_almost_eq(float(stews) / (n - combos), 0.4, 0.05)

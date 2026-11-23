@@ -1,5 +1,5 @@
 extends GutTest
-## StewPot (decisão 22): montar, cozinha sozinha sem mexer, pronta aos 12 s, queima 25 s
+## StewPot (decisão 22): montar, cozinha sozinha sem mexer, pronta aos 12 s, queima 18 s
 ## depois, 2 porções e nota pelo ponto + receita.
 
 const CARROT := "food_ingredient_carrot_chopped"
@@ -46,14 +46,14 @@ func test_stages_by_time() -> void:
 	assert_true(pot.tick(0.1), "estágio mudou")
 	assert_true(pot.is_ready(), "pronta aos 12 s, sem mexer")
 	assert_eq(pot.stage(), StewPot.Stage.READY)
-	pot.tick(10.0)
+	pot.tick(8.0)
 	assert_eq(pot.stage(), StewPot.Stage.OVERDONE)
-	pot.tick(9.0)
+	pot.tick(5.0)
 	assert_eq(pot.stage(), StewPot.Stage.SCORCHING)
-	pot.tick(5.9)
+	pot.tick(4.9)
 	assert_false(pot.is_burnt())
 	pot.tick(0.1)
-	assert_true(pot.is_burnt(), "queima 25 s depois de pronta")
+	assert_true(pot.is_burnt(), "queima 18 s depois de pronta")
 	assert_eq(pot.stage(), StewPot.Stage.BURNT)
 	pot.tick(10.0)
 	assert_eq(pot.cook_time, StewPot.BURNT_S, "trava")
@@ -62,12 +62,12 @@ func test_stages_by_time() -> void:
 func test_quality_table() -> void:
 	assert_eq(StewPot.quality_for_time(5.0), Kitchen.Quality.CLUMSY, "crua")
 	assert_eq(StewPot.quality_for_time(12.0), Kitchen.Quality.PERFECT)
-	assert_eq(StewPot.quality_for_time(21.9), Kitchen.Quality.PERFECT)
-	assert_eq(StewPot.quality_for_time(22.0), Kitchen.Quality.GOOD)
-	assert_eq(StewPot.quality_for_time(37.0), Kitchen.Quality.CLUMSY, "queimada")
+	assert_eq(StewPot.quality_for_time(19.9), Kitchen.Quality.PERFECT)
+	assert_eq(StewPot.quality_for_time(20.0), Kitchen.Quality.GOOD)
+	assert_eq(StewPot.quality_for_time(30.0), Kitchen.Quality.CLUMSY, "queimada")
 	assert_eq(StewPot.cook_score_for(5.0), 0.4)
-	assert_eq(StewPot.cook_score_for(30.0), 0.7)
-	assert_eq(StewPot.cook_score_for(37.0), 0.0)
+	assert_eq(StewPot.cook_score_for(27.0), 0.7)
+	assert_eq(StewPot.cook_score_for(30.0), 0.0)
 
 
 func test_perfect_serve() -> void:

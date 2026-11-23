@@ -4,13 +4,13 @@ extends RefCounted
 ## virar (os dois lados juntos). O tempo só corre na frigideira; tick(delta) injeta o tempo.
 ## A nota do ponto é gravada ao tirar.
 
-## Estágio (som/fumaça): cru < 8 s, no ponto 8–10, perfeito 10–14, passando 14–20, queimado ≥ 20.
+## Estágio (som/fumaça): cru < 8 s, no ponto 8–10, perfeito 10–12,5, passando 12,5–18, queimado ≥ 18.
 enum Stage { RAW, MEDIUM, GLOW, SMOKE, BURNT }
 
 const COOKED_S := 8.0
 const PERFECT_FROM_S := 10.0
-const PERFECT_UNTIL_S := 14.0
-const BURNT_S := 20.0
+const PERFECT_UNTIL_S := 12.5
+const BURNT_S := 18.0
 
 var in_pan: bool = false
 var time: float = 0.0

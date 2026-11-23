@@ -1129,7 +1129,7 @@ func _update_hint() -> void:
 			text = HINT_SERVE_BOWL
 		elif done_pan != "":
 			station = done_pan
-			# Dica só na janela de perfeito (10–14 s); passando do ponto, "Tire já!".
+			# Dica só na janela de perfeito (10–12,5 s); passando do ponto, "Tire já!".
 			text = HINT_PATTY_HURRY if done_stage == Patty.Stage.SMOKE else HINT_PATTY_DONE
 		elif pst == StewPot.Stage.READY:
 			station = POT_STATION

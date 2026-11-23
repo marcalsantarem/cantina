@@ -17,11 +17,11 @@ const END_SCREEN_DELAY_S := 1.5
 ## Início de cada fase (s); CLOSED começa em DURATION_S.
 const PHASE_START_S: Array[float] = [0.0, 45.0, 135.0, 165.0, 180.0]
 ## Intervalo entre chegadas por fase (0 = sem chegadas).
-const PHASE_INTERVAL_S: Array[float] = [22.0, 16.0, 20.0, 0.0, 0.0]
+const PHASE_INTERVAL_S: Array[float] = [22.0, 13.0, 20.0, 0.0, 0.0]
 ## Máximo de bilhetes abertos por fase.
 const PHASE_MAX_OPEN: Array[int] = [2, 4, 3, 0, 0]
 ## Chance de pedido com 2 itens por fase.
-const PHASE_COMBO_CHANCE: Array[float] = [0.0, 0.4, 0.0, 0.0, 0.0]
+const PHASE_COMBO_CHANCE: Array[float] = [0.0, 0.5, 0.0, 0.0, 0.0]
 ## 1 item: hambúrguer 60%, ensopado 40%. 2 itens: hambúrguer + ensopado 75%, 2 hambúrgueres 25%.
 const SINGLE_BURGER_CHANCE := 0.6
 const COMBO_MIXED_CHANCE := 0.75

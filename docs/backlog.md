@@ -29,3 +29,4 @@
 | T-025 | Cozinhar simples (decisão 22): tirar picar/virar/mexer, tudo arrastar e soltar; nota por ponto, receita e agilidade (tam. M) | M2 | AG01 | feita |
 | T-026 | Validação rápida do cozinhar simples no navegador (tam. P) | M2 | AG03 | feita (passa com ressalvas → T-027) |
 | T-027 | Ressalvas do T-026: bilhete expandido cobre caixotes em telas baixas, balão sobre a fumaça, "Tire no ponto!" cedo, frase do dia repetida (tam. P) | M2 | AG01 + AG02 | feita |
+| T-028 | Aperto de tempos B6–B10 (carne, rush, ★★★, tolerância, panela) (tam. P) | M2 | AG01 | feita |

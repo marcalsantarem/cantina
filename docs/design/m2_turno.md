@@ -12,13 +12,13 @@ Duração: **180 s** de jogo (relógio pausa com o app em segundo plano ou na pa
 | Fase | Tempo (s) | Intervalo entre chegadas | Máx. bilhetes abertos | Mistura de pedidos |
 |---|---|---|---|---|
 | Abertura (calmaria) | 0–45 | 22 s (1º bilhete aos 3 s) | 2 | só 1 item |
-| Hora do rush | 45–135 | 16 s | 4 | 1 item 60%, 2 itens 40% |
+| Hora do rush | 45–135 | 13 s (T-028; era 16) | 4 | 1 item 50%, 2 itens 50% (T-028; era 40%) |
 | Fechamento | 135–165 | 20 s | 3 | só 1 item |
 | Últimos pedidos | 165–180 | sem chegadas | — | — |
 
 - Próxima chegada = chegada anterior + intervalo da fase em que ela cai. Se o trilho estiver no máximo da fase, a chegada espera a vaga + 4 s.
 - **Chegadas seguradas** (B2 do QA M2): enquanto a chegada espera vaga, a agenda segue "fantasma" no intervalo da fase (até 165 s); cada chegada fantasma e a própria chegada segurada contam como segurada. A chegada atrasada que enfim entra desconta a sua. As que sobram no fim entram no denominador de A (§2), 1 item cada (o pedido não é sorteado). Ficar parado não encolhe a régua: parado, chegadas + seguradas = agenda sem atraso.
-- Sequência esperada sem atraso: 3, 25, 47, 63, 79, 95, 111, 127, 143, 163 → **10 bilhetes, ~12 itens**. Bom jogador atende ~10 itens; não é para dar conta de tudo.
+- Sequência esperada sem atraso (T-028): 3, 25, 47, 60, 73, 86, 99, 112, 125, 138, 158 → **11 bilhetes, ~14–15 itens** (7 no rush, metade com 2 itens). Não é para dar conta de tudo.
 - Trilho com 4 vagas (`Slot1`..`Slot4`).
 - **Relógio visível na cena:** relógio de parede acima da janela de pedidos, indo de 11h00 a 14h00 (1 h de jogo = 60 s). Sem número na HUD. Reforços: sino na chegada de cada bilhete; aos 45 s placa "Hora do almoço!" e o sino fica mais vivo; aos 165 s placa "Últimos pedidos"; aos 180 s placa vira "FECHADO" com sino triplo.
 - **Fim:** aos 180 s a cozinha congela (tudo para de cozinhar), itens em preparo somem; bilhetes abertos contam como não atendidos. Após 1,5 s abre a tela de fim de turno.
@@ -38,9 +38,9 @@ Por turno, 0–100:
 |---|---|
 | ★ | sempre (abrir a cantina já vale; sem derrota) |
 | ★★ | S ≥ 60 **e** A ≥ 50 |
-| ★★★ | S ≥ 80 **e** A ≥ 75 |
+| ★★★ | S ≥ 85 **e** A ≥ 75 (T-028; era 80) |
 
-Referência: Q 80, A 90, G 80 → 82,5 (★★★); Q 65, A 70, G 60 → 65,5 (★★); Q 60, A 40, G 40 → 52 (★); 1 prato perfeito e rápido com o resto parado: Q 100, A 10, G 100 → 77,5, mas A < 50 (★) (G3/B1 do QA M2).
+Referência: Q 90, A 90, G 80 → 88,5 (★★★); Q 80, A 90, G 80 → 82,5 (★★, abaixo de 85); Q 65, A 70, G 60 → 65,5 (★★); Q 60, A 40, G 40 → 52 (★); 1 prato perfeito e rápido com o resto parado: Q 100, A 10, G 100 → 77,5, mas A < 50 (★) (G3/B1 do QA M2).
 
 **Tela de fim de turno** (UI do AG02): estrelas (uma a uma, com sino), "Pedidos atendidos 7/9", nota média, agilidade em palavra ("Ágil" ≥ 80, "No ritmo" ≥ 50, "Sem pressa" < 50), a melhor frase de bilhete-resposta do dia, botões "Jogar de novo" e "Próximo dia" (este só no M3).
 
@@ -48,7 +48,7 @@ Referência: Q 80, A 90, G 80 → 82,5 (★★★); Q 65, A 70, G 60 → 65,5 (�
 
 O cliente **nunca vai embora** e a **nota do prato não cai** pela espera (a nota é do gesto, pilar 2). A espera pesa em **agilidade** (estrelas) e no **tom** do bilhete. Justificativa: punir o prato misturaria duas leituras e faria um prato perfeito parecer ruim.
 
-Espera `w` = do bilhete chegar até o último item entregue. Tolerância `T` = 30 s (1 item) ou 50 s (2 itens) (B4 do QA M2).
+Espera `w` = do bilhete chegar até o último item entregue. Tolerância `T` = 25 s (1 item) ou 45 s (2 itens) (B4 do QA M2; T-028: era 30/50).
 `agilidade = 1,0` se w ≤ T; cai linear até 0,3 em w = T + 60 s; mínimo 0,3.
 
 | Humor | Espera | Bilhete na cena |
@@ -112,7 +112,7 @@ Sem "sem cebola" no ensopado no M2 (a panela é compartilhada por 2 porções). 
 
 ## 7. Dificuldade
 
-Dentro do turno: §1 (intervalo 22 → 16 → 20 s; máximo aberto 2 → 4 → 3; combos só no rush). Pressão extra vem da cozinha viva, não de punição.
+Dentro do turno: §1 (intervalo 22 → 13 → 20 s; máximo aberto 2 → 4 → 3; combos só no rush). Pressão extra vem da cozinha viva, não de punição.
 
 Esboço dos dias para o M3 (cada dia libera algo, decisão 9):
 | Dia | Libera | Turno |
@@ -174,21 +174,23 @@ A única interação é **tocar/arrastar/soltar** (sem zigue-zague, puxão ou c�
 |---|---|---|---|
 | 0–8 | `burger_uncooked` | — | `desajeitado` 0,4 (cru) |
 | 8–10 | `burger_cooked` | fumaça leve | `bom` 0,7 |
-| 10–14 | cooked | brilho (fumaça clara) | `perfeito` 1,0 |
-| 14–20 | cooked | fumaça cinza + aro `Fx_Alert` | `bom` 0,7 |
-| ≥ 20 | `burger_trash` | fumaça escura | `queimado` 0 |
+| 10–12,5 | cooked | brilho (fumaça clara) | `perfeito` 1,0 |
+| 12,5–18 | cooked | fumaça cinza + aro `Fx_Alert`; dica "Tire já!" | `bom` 0,7 |
+| ≥ 18 | `burger_trash` | fumaça escura | `queimado` 0 |
+
+T-028 (B6): era perfeito 10–14 e queima aos 20 s.
 
 Nota única `{"ponto": x}` gravada ao tirar (tirar pausa). Feedback "Perfeito!/Bom/Ops" ao tirar.
 
-**Panela (`StewPot`):** soltar os 3 picados (1 de cada) → cozinha sozinha; **pronta aos 12 s**; sem mexer, sem grude. Esquecida, queima **25 s depois de pronta** (37 s). Rende 2 porções.
+**Panela (`StewPot`):** soltar os 3 picados (1 de cada) → cozinha sozinha; **pronta aos 12 s**; sem mexer, sem grude. Esquecida, queima **18 s depois de pronta** (30 s; T-028/B10, era 25 s/37 s). Rende 2 porções.
 
 | t (s) | Estágio | Sinal | Ponto ao servir |
 |---|---|---|---|
 | 0–12 | COOKING | vapor | `desajeitado` (cru) |
-| 12–22 | READY | vapor | `perfeito` |
-| 22–31 | OVERDONE | bolhas + aro | `bom` |
-| 31–37 | SCORCHING | bolhas + aro + fumaça cinza | `bom` |
-| ≥ 37 | BURNT | `pot_A_stew` escurecido + fumaça escura | `queimado` (0) |
+| 12–20 | READY | vapor | `perfeito` |
+| 20–25 | OVERDONE | bolhas + aro | `bom` |
+| 25–30 | SCORCHING | bolhas + aro + fumaça cinza | `bom` |
+| ≥ 30 | BURNT | `pot_A_stew` escurecido + fumaça escura | `queimado` (0) |
 
 Arrastar a panela leva a tigela (a porção sai só na entrega). **Panela queimada:** ainda dá para servir (nota baixa, gancho `stew_burnt`) ou **tocar nela uma vez** para esvaziar (escolhido por ser o mais simples: não precisa de caixote/lixo). Feedback "Perfeito!/Bom/Ops" ao entregar a tigela.
 

@@ -6,8 +6,8 @@ extends RefCounted
 enum Mood { CONTENT, IMPATIENT, HUNGRY }
 
 ## Tolerância de espera (s) para 1 item e para 2+ itens.
-const TOLERANCE_1_S := 30.0
-const TOLERANCE_2_S := 50.0
+const TOLERANCE_1_S := 25.0
+const TOLERANCE_2_S := 45.0
 ## Agilidade cai linear de 1,0 em T até o mínimo em T + isto.
 const AGILITY_FALL_S := 60.0
 const AGILITY_MIN := 0.3
@@ -20,7 +20,7 @@ const W_QUALITY := 0.60
 const W_SERVICE := 0.25
 const W_AGILITY := 0.15
 const TWO_STARS_MIN := 60.0
-const THREE_STARS_MIN := 80.0
+const THREE_STARS_MIN := 85.0
 ## Atendimento (A) mínimo para ★★ e ★★★ (B1 do QA M2: 1 prato perfeito não vale ★★).
 const TWO_STARS_MIN_A := 50.0
 const THREE_STARS_MIN_A := 75.0
