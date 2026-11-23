@@ -1,6 +1,6 @@
 # M1: fluxo do hambúrguer (especificação T-005 / T-007)
 
-Decisões vigentes: 3 (cena única de frente), 4 (gesto define qualidade), 5 (clientes invisíveis), 6 (Zen: sem relógio, sem derrota).
+Decisões vigentes: 3 (cena única de frente), 4 (gesto define qualidade), 5 (clientes invisíveis), 6 (Zen; revista em 2026-11-23, ver m2_turno.md).
 Contrato: id de ingrediente/estado = nome base do glTF em `KayKit_Restaurant_Bits_1.0_FREE/Assets/gltf`.
 Notação de qualidade: `perfeito` = 1.0, `bom` = 0.7, `desajeitado` = 0.4, `ausente`/`queimado` = 0.
 

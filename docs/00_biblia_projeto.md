@@ -6,7 +6,7 @@
 
 ## Pilares
 
-1. **Zen:** sem relógio, sem derrota (decisão 6). A pressão vem do desejo de caprichar, não do tempo.
+1. **Turno com pico:** cada dia é um turno curto com calmaria e hora do rush, sem derrota; estrelas no fim (decisão 6). **Cozinha viva:** as estações cozinham e queimam sozinhas, o jogador faz malabarismo (decisão 19).
 2. **Gesto é a mecânica** (decisão 4): o jogo se sente nas mãos.
 3. **Clientes invisíveis com personalidade** (decisão 5): humor e calor pelos bilhetes.
 4. **Um só quadro** (decisão 3): toda a cozinha visível de uma vez, sem navegar.
@@ -46,9 +46,9 @@ Qualidade: **perfeito / bom / desajeitado**. Queimar não é derrota: o prato sa
 
 Hambúrguer, hambúrguer vegetariano, ensopado (cenoura, batata, cebola), jantar (carne/presunto + purê + cenoura).
 
-## Progressão no Zen [A definir]
+## Progressão
 
-Sem dinheiro de pressão. Candidatos: caderno de receitas liberado ao servir, clientes recorrentes, decoração da cozinha. Perguntar ao dono antes do M3.
+Cardápio que cresce: cada dia traz receita ou estação nova; as estrelas do turno desbloqueiam o próximo dia (decisão 9).
 
 ## Visual
 

@@ -15,3 +15,4 @@
 | T-011 | Bilhete mostra a receita esperada com ícones, sem os itens do "sem" (tam. P) | M1 | AG02 | feita |
 | T-012 | Prato montado sempre alinhado e centralizado (tam. P) | M1 | AG01 | feita |
 | T-013 | Dica de ação por ingrediente/estação: sinal na cozinha (AG01) e balão na UI (AG02) (tam. P) | M1 | AG01 + AG02 | feita |
+| T-014 | Design do M2 "Turno": estrutura do turno, curva de calmaria/rush, estrelas, cozinha viva e pedidos com 2 itens (tam. P) | M2 | AG01 | feita |
