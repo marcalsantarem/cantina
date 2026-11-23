@@ -3,13 +3,32 @@ extends CanvasLayer
 ## Fala com a cozinha só por sinais (contrato BRF-007): ticket_added, ticket_served,
 ## gesture_feedback e get_slot_screen_position(slot); opcional action_hint(text, screen_pos) (BRF-011).
 ## O prato vai sempre para o bilhete mais antigo aberto (FIFO): ele ganha o destaque "próximo".
-## Em telas baixas os bilhetes são ampliados para a frase ter ao menos min_phrase_px na tela.
+## Em telas baixas os bilhetes são ampliados para a frase ter ao menos min_phrase_px na tela,
+## sem passar do que deixa SLOTS bilhetes lado a lado.
+## M2 (BRF-016), sinais opcionais: ticket_item_delivered, ticket_mood_changed,
+## shift_phase_changed (placas) e shift_ended (tela de fim; "Jogar de novo" -> replay_requested).
+
+signal replay_requested
 
 const TicketCardScene := preload("res://scenes/ui/ticket_card.tscn")
 const FeedbackWord := preload("res://src/ui/feedback_word.gd")
 const HintBubble := preload("res://src/ui/hint_bubble.gd")
+const PhaseBanner := preload("res://src/ui/phase_banner.gd")
+const EndScreen := preload("res://src/ui/end_screen.gd")
+const UiText := preload("res://src/ui/ui_text.gd")
 const GAP := 6.0
 const MARGIN := 8.0
+## Vagas do trilho (Slot1..Slot4) e largura de projeto de um bilhete.
+const SLOTS := 4
+const CARD_WIDTH := 190.0
+## Sinais da cozinha -> método do HUD (opcionais: liga só os que existirem).
+const OPTIONAL_SIGNALS := {
+	"action_hint": "_on_action_hint",
+	"ticket_item_delivered": "_on_ticket_item_delivered",
+	"ticket_mood_changed": "_on_ticket_mood_changed",
+	"shift_phase_changed": "_on_shift_phase_changed",
+	"shift_ended": "_on_shift_ended",
+}
 
 ## Tempo que o bilhete-resposta fica visível.
 @export var reply_seconds := 4.0
@@ -32,15 +51,28 @@ static func ticket_scale_for(screen_scale: float, font_size: float, min_px: floa
 		return 1.0
 	return clampf(min_px / (font_size * screen_scale), 1.0, max_scale)
 
+
+## Maior escala que ainda deixa SLOTS bilhetes lado a lado na largura visível.
+static func fit_scale_for(visible_width: float) -> float:
+	return maxf((visible_width - 2.0 * MARGIN) / (SLOTS * CARD_WIDTH + (SLOTS - 1) * GAP), 0.5)
+
 @onready var _tickets: Control = $Tickets
 @onready var _feedback: Control = $Feedback
 @onready var _hint: Control = $Hint
+@onready var _overlay: Control = $Overlay
 var _bubble: PanelContainer
+var _banner: PanelContainer
+var _end: Control
 
 
 func _ready() -> void:
 	_bubble = HintBubble.new()
 	_hint.add_child(_bubble)
+	_banner = PhaseBanner.new()
+	_overlay.add_child(_banner)
+	_end = EndScreen.new()
+	_overlay.add_child(_end)
+	_end.replay_requested.connect(replay_requested.emit)
 	get_viewport().size_changed.connect(_refresh_anchors)
 	_refresh_anchors()
 
@@ -51,16 +83,20 @@ func bind(controller: Node) -> void:
 	controller.connect("ticket_added", _on_ticket_added)
 	controller.connect("ticket_served", _on_ticket_served)
 	controller.connect("gesture_feedback", _on_gesture_feedback)
-	if controller.has_signal("action_hint"):
-		controller.connect("action_hint", _on_action_hint)
+	for sig: String in OPTIONAL_SIGNALS:
+		if controller.has_signal(sig):
+			controller.connect(sig, Callable(self, OPTIONAL_SIGNALS[sig]))
 
 
 func unbind() -> void:
 	if _controller == null or not is_instance_valid(_controller):
 		_controller = null
 		return
-	for pair in [["ticket_added", _on_ticket_added], ["ticket_served", _on_ticket_served],
-			["gesture_feedback", _on_gesture_feedback], ["action_hint", _on_action_hint]]:
+	var pairs := [["ticket_added", _on_ticket_added], ["ticket_served", _on_ticket_served],
+			["gesture_feedback", _on_gesture_feedback]]
+	for sig: String in OPTIONAL_SIGNALS:
+		pairs.append([sig, Callable(self, OPTIONAL_SIGNALS[sig])])
+	for pair in pairs:
 		if _controller.has_signal(pair[0]) and _controller.is_connected(pair[0], pair[1]):
 			_controller.disconnect(pair[0], pair[1])
 	_controller = null
@@ -70,6 +106,16 @@ func unbind() -> void:
 ## Balão de dica de ação.
 func get_hint() -> PanelContainer:
 	return _bubble
+
+
+## Placa do turno.
+func get_banner() -> PanelContainer:
+	return _banner
+
+
+## Tela de fim de turno.
+func get_end_screen() -> Control:
+	return _end
 
 
 ## Bilhete aberto no slot (ou null).
@@ -129,6 +175,29 @@ func _on_action_hint(text: String, screen_pos: Vector2) -> void:
 	_bubble.show_hint(text, screen_pos)
 
 
+func _on_ticket_item_delivered(slot: int, _ticket: TicketData, item_index: int) -> void:
+	var card := get_card(slot)
+	if card:
+		card.mark_delivered(item_index)
+
+
+func _on_ticket_mood_changed(slot: int, mood: int) -> void:
+	var card := get_card(slot)
+	if card:
+		card.mood = mood
+
+
+func _on_shift_phase_changed(phase: int) -> void:
+	if phase >= 0 and phase < UiText.PHASE_BANNERS.size():
+		_banner.show_text(UiText.PHASE_BANNERS[phase])
+
+
+func _on_shift_ended(summary: Dictionary) -> void:
+	_bubble.hide_hint()
+	_end.ui_scale = ui_scale
+	_end.show_summary(summary)
+
+
 func _new_card(slot: int, ticket: TicketData) -> Control:
 	var card := TicketCardScene.instantiate()
 	card.slot = slot
@@ -171,8 +240,11 @@ func _refresh_anchors() -> void:
 	else:
 		var fs := float(_tickets.get_theme_font_size("font_size", "TicketPhrase"))
 		ui_scale = ticket_scale_for(_screen_scale(), fs, min_phrase_px, max_ui_scale)
+		ui_scale = minf(ui_scale, maxf(fit_scale_for(get_viewport().get_visible_rect().size.x), 1.0))
 	_tickets.scale = Vector2.ONE * ui_scale
 	_bubble.ui_scale = ui_scale
+	_banner.ui_scale = ui_scale
+	_end.ui_scale = ui_scale
 	_tickets.size = get_viewport().get_visible_rect().size / ui_scale
 	for card in _tickets.get_children():
 		card.compact = ui_scale > 1.0

@@ -149,3 +149,12 @@ Esboço dos dias para o M3 (cada dia libera algo, decisão 9):
 - **Ensopado:** queimado antes de pronto vale `queimado` (0), não `desajeitado`. Mexer a panela queimada conta como raspar (não tira grude). Mais de 9 cortes: mesmo picado, nota `desajeitado`. Ganchos: `stew_burnt`, `stew_raw`, `stew_stir` (separados dos do hambúrguer) e `late` (demora). Frases de faixa próprias do ensopado em `recipe_bands`; combo usa as genéricas.
 - **Gancho de demora (§3):** com agilidade < 0,7 entra `late` se a nota do bilhete ≥ 80 ou se o pior item não tem erro; senão fica o gancho do pior item.
 - **Tela de fim:** "melhor frase" = resposta do bilhete completo de maior nota (desempate: maior agilidade). Tigela volta como `bowl`/`bowl_dirty` (`DishScorer.return_model_for`).
+
+## Esclarecimentos da integração (BRF-015)
+
+- **Mexer × servir:** o toque na panela com ensopado começa o mexer; a tigela só sai se o dedo se afastar mais de 0,17 u do centro sem nenhuma volta feita (e com menos de ¼ de volta em curso). Depois de mexer, para servir é preciso soltar e arrastar de novo. A porção só sai da panela na entrega; se ninguém espera ensopado, a tigela volta e a porção fica.
+- **O que volta pela janela:** item que fecha o bilhete usa a faixa da nota do bilhete; item entregue com o bilhete ainda aberto usa a faixa da nota do próprio item.
+- **Pausa:** com o app em segundo plano toda a cozinha para (relógio, carne e panela), não só o relógio.
+- **Fim (180 s):** somem carne nas frigideiras, ingrediente na tábua, panela (volta a `pot_A` vazia), prato em montagem e o item na mão; a cozinha ignora toques. `shift_phase_changed` também emite `OPENING` no `start()`.
+- **Dicas:** prioridade carne queimada > panela grudando (≥ 0,6) > carne no ponto > panela com grude ≥ 0,3 ("Mexa em círculos ⟳") > ensopado pronto ("Arraste a tigela à janela") > virar > tábua > prato > caixotes. "Ninguém pediu isso agora" fica 2 s na janela.
+- **Caixotes:** chaves `carrot`/`potato`/`onion` em `food_stew.json` (iguais aos nós `Crate_*` da cena).

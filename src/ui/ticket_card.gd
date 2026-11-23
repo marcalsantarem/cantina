@@ -1,6 +1,7 @@
 extends PanelContainer
 ## Bilhete de papel no trilho. Vira bilhete-resposta ao servir e some depois.
 ## Posição: base inferior centrada em anchor_point (+ deslocamentos), presa à tela.
+## M2: uma fileira de receita por item (✓ ao entregar) e humor de espera (ShiftScorer.Mood).
 
 const UiText := preload("res://src/ui/ui_text.gd")
 const ICON_PATH := "res://assets/icons/%s.png"
@@ -15,6 +16,15 @@ const COMPACT_LINES := 2
 const RECIPE_PATH := "res://data/recipes/%s.json"
 ## Lado dos ícones da receita (px lógicos do bilhete).
 const RECIPE_ICON := 26.0
+## Receitas cujo ícone do prato abre a fileira quando o bilhete tem mais de 1 item (tigela).
+const DISH_PREFIX: Array[String] = ["food_stew"]
+enum Mood { CONTENT, IMPATIENT, HUNGRY }  # = ShiftScorer.Mood
+## Balanço do bilhete impaciente: a cada SWAY_EVERY s, SWAY_S s de balanço.
+const SWAY_EVERY := 5.0
+const SWAY_S := 0.6
+const SWAY_ANGLE := 0.06
+const HUNGRY_PAPER := Color("#f6dc9a")
+const MOOD_INK := Color("#c76b45")
 
 static var _recipe_cache := {}
 static var _trimmed_cache := {}
@@ -53,32 +63,58 @@ var compact := false:
 		compact = v
 		_apply_compact()
 
+## Humor de espera (Mood); o visual só vale enquanto o bilhete está aberto.
+var mood := Mood.CONTENT:
+	set(v):
+		if v == mood:
+			return
+		mood = v
+		_apply_mood()
+## Ângulo extra do balanço (animado).
+var sway := 0.0:
+	set(v):
+		sway = v
+		rotation = _base_rotation + v
+
 var _full_phrase := ""
+var _base_rotation := 0.0
+var _sway_tween: Tween
+var _item_count := 1
 
 @onready var _icon: TextureRect = %Icon
 @onready var _name: Label = %Name
 @onready var _phrase: Label = %Phrase
 @onready var _without: Label = %Without
-@onready var _recipe: HBoxContainer = %Recipe
+@onready var _items: VBoxContainer = %Items
+@onready var _hungry: Label = %Hungry
 @onready var _stamp: Control = %Stamp
 
 
 func _ready() -> void:
 	resized.connect(_place)
-	rotation = randf_range(-0.035, 0.035)
+	_base_rotation = randf_range(-0.035, 0.035)
+	rotation = _base_rotation
 
 
 func show_ticket(ticket: TicketData) -> void:
 	_name.text = ticket.nickname
 	_full_phrase = ticket.phrase
 	_apply_compact()
+	var items := ticket_items(ticket)
+	_item_count = items.size()
 	var icon_path := ICON_PATH % ticket.recipe
 	_icon.texture = load(icon_path) if ResourceLoader.exists(icon_path) else null
-	_icon.visible = _icon.texture != null
-	_show_recipe(recipe_layers(ticket))
-	_without.visible = not ticket.without.is_empty()
+	_icon.visible = _icon.texture != null and _item_count == 1
+	_show_items(items)
+	var without: Array[String] = []
+	for it in items:
+		for id: String in it["without"]:
+			if not without.has(id):
+				without.append(id)
+	_without.visible = not without.is_empty()
 	if _without.visible:
-		_without.text = UiText.without_text(ticket.without)
+		_without.text = UiText.without_text(without)
+	_hungry.text = UiText.HUNGRY_LINE
 	_stamp.visible = false
 	modulate.a = 0.0
 	scale = Vector2(0.85, 0.85)
@@ -103,11 +139,12 @@ func show_reply(reply: String, band: int) -> void:
 func apply_reply(reply: String, band: int) -> void:
 	is_reply = true
 	is_next = false
+	mood = Mood.CONTENT
 	_phrase.max_lines_visible = -1
 	theme_type_variation = &"ReplyPanel"
 	_icon.visible = false
 	_without.visible = false
-	_recipe.visible = false
+	_items.visible = false
 	_phrase.text = reply
 	_stamp.band = band
 	_stamp.visible = true
@@ -146,39 +183,141 @@ func dismiss(duration := 0.4) -> void:
 	tw.chain().tween_callback(queue_free)
 
 
-## Ids das camadas pedidas, da base para o topo (ordem de montagem), sem as do `without`.
-static func recipe_layers(ticket: TicketData) -> Array[String]:
-	var recipe: Recipe = _recipe_cache.get(ticket.recipe)
-	if recipe == null:
-		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(RECIPE_PATH % ticket.recipe))
-		recipe = Recipe.from_dict(data if data is Dictionary else {})
-		_recipe_cache[ticket.recipe] = recipe
-	return recipe.requested_layers(ticket.without)
-
-
-## Ids mostrados na fileira de receita, na ordem (base -> topo, da esquerda para a direita).
-func recipe_ids() -> Array[String]:
-	var out: Array[String] = []
-	if _recipe.visible:
-		for icon in _recipe.get_children():
-			out.append(String(icon.get_meta("id")))
+## Itens do bilhete ({recipe, without, delivered}); bilhete antigo sem `items` vira 1 item.
+static func ticket_items(ticket: TicketData) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for it in ticket.items:
+		out.append(it)
+	if out.is_empty():
+		out.append({"recipe": ticket.recipe, "without": ticket.without, "delivered": false})
 	return out
 
 
-func _show_recipe(ids: Array[String]) -> void:
-	for old in _recipe.get_children():
+## Ids das camadas pedidas, da base para o topo (ordem de montagem), sem as do `without`.
+static func recipe_layers(ticket: TicketData) -> Array[String]:
+	return layers_for(ticket.recipe, ticket.without)
+
+
+static func layers_for(recipe_id: String, without: Array) -> Array[String]:
+	var recipe: Recipe = _recipe_cache.get(recipe_id)
+	if recipe == null:
+		var path := RECIPE_PATH % recipe_id
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		recipe = Recipe.from_dict(data if data is Dictionary else {})
+		_recipe_cache[recipe_id] = recipe
+	return recipe.requested_layers(without)
+
+
+## Ids mostrados na fileira do item, na ordem (base -> topo, da esquerda para a direita).
+func recipe_ids(item := 0) -> Array[String]:
+	var out: Array[String] = []
+	if _items.visible and item < _items.get_child_count():
+		for icon in _items.get_child(item).get_children():
+			if icon.has_meta("id"):
+				out.append(String(icon.get_meta("id")))
+	return out
+
+
+func item_row_count() -> int:
+	return _items.get_child_count() if _items.visible else 0
+
+
+## Marca o item como entregue (✓ e fileira esmaecida).
+func mark_delivered(item: int) -> void:
+	if item < 0 or item >= _items.get_child_count():
+		return
+	var row: Control = _items.get_child(item)
+	row.set_meta("delivered", true)
+	row.get_node("Check").visible = true
+	for icon in row.get_children():
+		if icon.has_meta("id"):
+			icon.modulate.a = 0.4
+
+
+func is_delivered(item: int) -> bool:
+	return item >= 0 and item < _items.get_child_count() and _items.get_child(item).get_meta("delivered", false)
+
+
+func hungry_label() -> Label:
+	return _hungry
+
+
+func is_swaying() -> bool:
+	return _sway_tween != null and _sway_tween.is_valid()
+
+
+func _show_items(items: Array[Dictionary]) -> void:
+	for old in _items.get_children():
 		old.free()
-	for id in ids:
-		var icon := TextureRect.new()
-		icon.texture = _trimmed_icon(id)
-		icon.custom_minimum_size = Vector2.ONE * RECIPE_ICON
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon.tooltip_text = UiText.ingredient_name(id)
-		icon.set_meta("id", id)
-		_recipe.add_child(icon)
-	_recipe.visible = not ids.is_empty()
+	for it in items:
+		var ids: Array[String] = []
+		var rid := String(it["recipe"])
+		if items.size() > 1 and DISH_PREFIX.has(rid):
+			ids.append(rid)
+		ids.append_array(layers_for(rid, it["without"]))
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_constant_override("separation", 2)
+		for id in ids:
+			var icon := TextureRect.new()
+			icon.texture = _trimmed_icon(id)
+			icon.custom_minimum_size = Vector2.ONE * RECIPE_ICON
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon.tooltip_text = UiText.ingredient_name(id)
+			icon.set_meta("id", id)
+			row.add_child(icon)
+		var check := CheckMark.new()
+		check.name = "Check"
+		check.custom_minimum_size = Vector2.ONE * RECIPE_ICON
+		check.size_flags_horizontal = Control.SIZE_SHRINK_END | Control.SIZE_EXPAND
+		check.visible = false
+		row.add_child(check)
+		_items.add_child(row)
+		if it.get("delivered", false):
+			mark_delivered(_items.get_child_count() - 1)
+	_items.visible = not items.is_empty()
+
+
+func _apply_mood() -> void:
+	if _hungry == null:
+		return
+	var open := not is_reply
+	var hungry := open and mood == Mood.HUNGRY
+	_hungry.visible = hungry
+	if hungry:
+		var sb := get_theme_stylebox("panel", &"TicketPanel").duplicate() as StyleBoxFlat
+		if sb:
+			sb.bg_color = HUNGRY_PAPER
+			add_theme_stylebox_override("panel", sb)
+	else:
+		remove_theme_stylebox_override("panel")
+	if open and mood == Mood.IMPATIENT:
+		if not is_swaying():
+			_sway_tween = create_tween().set_loops()
+			_sway_tween.tween_interval(SWAY_EVERY - SWAY_S)
+			for a in [SWAY_ANGLE, -SWAY_ANGLE, SWAY_ANGLE * 0.5, 0.0]:
+				_sway_tween.tween_property(self, "sway", a, SWAY_S / 4.0).set_trans(Tween.TRANS_SINE)
+	elif is_swaying():
+		_sway_tween.kill()
+		_sway_tween = null
+		sway = 0.0
+	queue_redraw()
+
+
+## Visto de entrega, desenhado (a fonte pode não ter o glifo ✓).
+class CheckMark extends Control:
+	const COLOR := Color("#2fa57e")
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var s := minf(size.x, size.y)
+		var o := (size - Vector2(s, s)) * 0.5
+		draw_polyline(PackedVector2Array([o + Vector2(0.15, 0.55) * s, o + Vector2(0.4, 0.8) * s,
+				o + Vector2(0.88, 0.2) * s]), COLOR, maxf(3.0, s * 0.16), true)
 
 
 ## Ícone sem a margem transparente (as fatias são achatadas e somem num ícone pequeno).
@@ -251,6 +390,21 @@ func _draw() -> void:
 	draw_rect(Rect2(clip.position + Vector2(0, clip.size.y - 3), Vector2(clip.size.x, 3)), CLIP_COLOR.darkened(0.25))
 	if is_next:
 		_draw_next_tag()
+	if mood == Mood.IMPATIENT and not is_reply:
+		_draw_impatient_stamp()
+
+
+## Carimbo "…" no canto superior direito do bilhete impaciente.
+func _draw_impatient_stamp() -> void:
+	var c := Vector2(size.x - 14.0, 12.0)
+	var r := 13.0
+	draw_circle(c, r, Color(1, 0.98, 0.93))
+	draw_arc(c, r, 0.0, TAU, 32, MOOD_INK, 2.5, true)
+	var font := get_theme_font("font", "TicketName")
+	var fs := 20
+	var t := UiText.IMPATIENT_STAMP
+	var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(font, Vector2(c.x - w * 0.5, c.y + 3.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, MOOD_INK)
 
 
 ## Fita "próximo" pendurada na base do bilhete.

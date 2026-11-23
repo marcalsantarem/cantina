@@ -152,9 +152,9 @@ func test_stew_recipe_chop_config() -> void:
 			c.add_cut(200, 1)
 		assert_true(c.is_done())
 		assert_eq(c.carry_item_id(), raw + "_chopped")
-	assert_eq(r.crate_item("carrots"), "food_ingredient_carrot")
-	assert_eq(r.crate_item("potatoes"), "food_ingredient_potato")
-	assert_eq(r.crate_item("onions"), "food_ingredient_onion")
+	assert_eq(r.crate_item("carrot"), "food_ingredient_carrot")
+	assert_eq(r.crate_item("potato"), "food_ingredient_potato")
+	assert_eq(r.crate_item("onion"), "food_ingredient_onion")
 
 
 func test_more_than_9_cuts_forces_clumsy() -> void:

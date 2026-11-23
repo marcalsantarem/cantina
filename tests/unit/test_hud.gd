@@ -253,3 +253,151 @@ func test_theme_has_font() -> void:
 	var theme: Theme = load("res://assets/ui/cantina_theme.tres")
 	assert_not_null(theme.default_font)
 	assert_true(theme.has_stylebox("panel", "TicketPanel"))
+
+
+# --- M2 (BRF-016) -------------------------------------------------------------
+
+func _combo() -> TicketData:
+	return Fake.make_multi_ticket(5, "Seu Jorge", "Um de cada, chef!", ["food_burger", "food_stew"] as Array[String])
+
+
+func test_multi_item_card_shows_one_row_per_item() -> void:
+	fake.ticket_added.emit(0, _combo())
+	await wait_process_frames(2)
+	var card: Control = hud.get_card(0)
+	assert_eq(card.item_row_count(), 2)
+	assert_eq(card.recipe_ids(0).size(), 6, "hambúrguer completo")
+	assert_eq(card.recipe_ids(1), ["food_stew", "food_ingredient_carrot_chopped",
+			"food_ingredient_potato_chopped", "food_ingredient_onion_chopped"] as Array[String], "tigela + picados")
+	assert_null(card.icon_texture(), "sem ícone do prato no cabeçalho com 2 itens")
+	fake.ticket_added.emit(1, Fake.make_multi_ticket(6, "Lia", "Ensopado.", ["food_stew"] as Array[String]))
+	await wait_process_frames(2)
+	assert_eq(hud.get_card(1).recipe_ids(0).size(), 3, "1 item: só os picados")
+	assert_not_null(hud.get_card(1).icon_texture(), "1 item: ícone do prato no cabeçalho")
+
+
+func test_item_delivered_gets_check() -> void:
+	var t := _combo()
+	fake.ticket_added.emit(0, t)
+	await wait_process_frames(2)
+	var card: Control = hud.get_card(0)
+	assert_false(card.is_delivered(1))
+	fake.ticket_item_delivered.emit(0, t, 1)
+	assert_true(card.is_delivered(1), "✓ no ensopado")
+	assert_false(card.is_delivered(0))
+	fake.ticket_item_delivered.emit(3, t, 0)  # slot sem bilhete: ignora
+	assert_false(card.is_delivered(0))
+
+
+func test_mood_impatient_and_hungry() -> void:
+	fake.ticket_added.emit(0, _ticket())
+	await wait_process_frames(2)
+	var card: Control = hud.get_card(0)
+	assert_false(card.is_swaying())
+	fake.ticket_mood_changed.emit(0, 1)  # IMPATIENT
+	assert_true(card.is_swaying(), "balança")
+	assert_false(card.hungry_label().visible)
+	fake.ticket_mood_changed.emit(0, 2)  # HUNGRY
+	assert_false(card.is_swaying())
+	assert_true(card.hungry_label().visible)
+	assert_eq(card.hungry_label().text, "Tô com fome, chef!")
+	assert_true(card.has_theme_stylebox_override("panel"), "papel amarelado")
+	fake.ticket_served.emit(0, _ticket(), 80, 1, "ok")
+	await wait_seconds(0.4)
+	assert_false(card.hungry_label().visible, "resposta sem humor")
+	assert_false(card.has_theme_stylebox_override("panel"))
+
+
+func test_four_multi_cards_fit_side_by_side() -> void:
+	for i in 4:
+		fake.ticket_added.emit(i, _combo())
+	await wait_seconds(0.6)
+	var vp := hud.get_viewport().get_visible_rect().size
+	var rects: Array[Rect2] = []
+	for i in 4:
+		rects.append(hud.get_card(i).get_global_rect())
+	for i in 3:
+		assert_true(rects[i].end.x <= rects[i + 1].position.x + 0.5, "sem sobreposição %d" % i)
+	assert_true(rects[0].position.x >= 0.0 and rects[3].end.x <= vp.x + 0.5, "dentro da tela")
+
+
+func test_fit_scale_for_four_cards() -> void:
+	var k := Hud.fit_scale_for(1280.0)
+	assert_true(Hud.SLOTS * Hud.CARD_WIDTH * k <= 1280.0, "4 bilhetes cabem")
+	assert_true(k > 1.0)
+
+
+func test_phase_banners() -> void:
+	var banner: Control = hud.get_banner()
+	fake.shift_phase_changed.emit(0)  # OPENING
+	assert_false(banner.visible, "abertura sem placa")
+	fake.shift_phase_changed.emit(1)  # RUSH
+	assert_true(banner.is_shown())
+	assert_eq(banner.banner_text(), "Hora do almoço!")
+	assert_eq(banner.mouse_filter, Control.MOUSE_FILTER_IGNORE)
+	fake.shift_phase_changed.emit(3)
+	assert_eq(banner.banner_text(), "Últimos pedidos")
+	fake.shift_phase_changed.emit(4)
+	assert_eq(banner.banner_text(), "Fechado!")
+	await wait_seconds(2.6)
+	assert_false(banner.visible, "placa breve")
+
+
+func _shift_summary() -> Dictionary:
+	return {"score": 70.0, "stars": 2, "quality": 75.0, "service": 70.0, "agility": 60.0, "served": 7,
+			"arrived": 9, "items_delivered": 8, "items_total": 12, "avg_score": 75, "agility_word": "No ritmo",
+			"best_reply": "Chef, isso foi poesia com queijo."}
+
+
+func test_shift_end_screen() -> void:
+	var end: Control = hud.get_end_screen()
+	assert_false(end.visible)
+	fake.shift_ended.emit(_shift_summary())
+	assert_true(end.visible)
+	assert_eq(end.mouse_filter, Control.MOUSE_FILTER_STOP, "bloqueia a cozinha")
+	var t: PackedStringArray = end.texts()
+	assert_has(t, "Pedidos atendidos 7/9")
+	assert_has(t, "Nota média 75")
+	assert_has(t, "Agilidade: No ritmo")
+	assert_has(t, "“Chef, isso foi poesia com queijo.”")
+	assert_eq(end.star_nodes().filter(func(s): return s.earned).size(), 2)
+	await wait_seconds(3.0)
+	for s in end.star_nodes():
+		assert_almost_eq(s.pop, 1.0, 0.01, "estrelas entraram")
+	var btn: Button = end.replay_button()
+	assert_eq(btn.text, "Jogar de novo")
+	var r := btn.get_global_rect()
+	var vp := hud.get_viewport().get_visible_rect().size
+	assert_true(r.size.y >= 48.0 and r.size.x >= 48.0, "alvo >= 48 px")
+	assert_true(Rect2(Vector2.ZERO, vp).encloses(r), "botão na tela")
+	watch_signals(hud)
+	btn.pressed.emit()
+	btn.pressed.emit()
+	assert_signal_emit_count(hud, "replay_requested", 1)
+
+
+func test_main_replay_restarts_without_start_screen() -> void:
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	var game_root := Fake.new()
+	game_root.name = "Game"
+	var packed := PackedScene.new()
+	packed.pack(game_root)
+	game_root.free()
+	main.game_scene = packed
+	add_child_autofree(main)
+	main.get_node("StartScreen").begin()
+	await wait_seconds(0.5)
+	assert_false(main.has_node("StartScreen"), "tela inicial saiu")
+	var old_game: Node = main.game
+	var old_hud: Node = main.hud
+	main.game.shift_ended.emit(_shift_summary())
+	main.hud.get_end_screen().replay_button().pressed.emit()
+	await wait_process_frames(3)
+	assert_false(is_instance_valid(old_game), "jogo antigo saiu")
+	assert_false(is_instance_valid(old_hud), "HUD antigo saiu")
+	assert_ne(main.game, old_game)
+	assert_true(main.game.started, "novo turno começou")
+	assert_false(main.hud.get_end_screen().visible)
+	assert_false(main.has_node("StartScreen"), "não volta à tela inicial")
+	main.game.ticket_added.emit(0, _ticket())
+	assert_eq(main.hud.get_cards().size(), 1, "HUD novo ligado ao jogo novo")

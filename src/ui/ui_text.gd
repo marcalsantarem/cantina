@@ -6,6 +6,16 @@ const START_HINT := "Toque para começar"
 const START_CREDITS := "Assets: Kay Lousberg (KayKit, CC0)  ·  Fonte: Fredoka (SIL OFL)"
 const ROTATE_HINT := "Gire o celular"
 const WITHOUT := "sem %s"
+const HUNGRY_LINE := "Tô com fome, chef!"
+const IMPATIENT_STAMP := "…"
+## Placas do turno por `ShiftClock.Phase` (vazio = sem placa).
+const PHASE_BANNERS: Array[String] = ["", "Hora do almoço!", "", "Últimos pedidos", "Fechado!"]
+const END_TITLE := "Fim do turno"
+const END_SERVED := "Pedidos atendidos %d/%d"
+const END_AVG := "Nota média %d"
+const END_AGILITY := "Agilidade: %s"
+const END_BEST := "Melhor frase do dia"
+const END_REPLAY := "Jogar de novo"
 
 const INGREDIENT_NAMES := {
 	"tomato": "tomate", "cheese": "queijo", "lettuce": "alface", "onion": "cebola",

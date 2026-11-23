@@ -41,8 +41,8 @@
 		}
 	},
 	"crates": {
-		"carrots": "food_ingredient_carrot",
-		"potatoes": "food_ingredient_potato",
-		"onions": "food_ingredient_onion"
+		"carrot": "food_ingredient_carrot",
+		"potato": "food_ingredient_potato",
+		"onion": "food_ingredient_onion"
 	}
 }
