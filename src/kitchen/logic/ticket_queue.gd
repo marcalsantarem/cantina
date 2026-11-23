@@ -2,11 +2,16 @@ class_name TicketQueue
 extends RefCounted
 ## Fila de bilhetes (design §4): até 3 abertos; um novo chega 6 s depois que houver
 ## vaga; não expiram. Tempo por tick(delta) e RNG injetados.
+## M2 (m2_turno §5): o ShiftClock decide quando chega; `spawn_order` cria o bilhete
+## com 1+ itens e `deliver` entrega item a item ao mais antigo que espera a receita.
 
 signal ticket_arrived(ticket: TicketData)
 
 const CUSTOMERS_PATH := "res://data/kitchen/customers.json"
 const MAX_OPEN := 3
+## Vagas do trilho no M2 (Slot1..Slot4).
+const RAIL_SLOTS := 4
+const BURGER := "food_burger"
 const ARRIVAL_DELAY_S := 6.0
 const PLAIN_CHANCE := 0.7
 const WITHOUT_STEP := 0.1
@@ -21,6 +26,10 @@ var open: Array[TicketData] = []
 var customers: Array = []
 var without_phrases: Dictionary = {}
 var recipe_id: String = "food_burger"
+## Máximo de abertos (M1 = 3; no M2 use RAIL_SLOTS e deixe o ShiftClock limitar por fase).
+var max_open: int = MAX_OPEN
+## Frases por receita/combinação ("food_stew", "combo"), para pedidos que não são 1 hambúrguer.
+var recipe_phrases: Dictionary = {}
 var _timer: float = 0.0
 var _next_id: int = 1
 
@@ -30,6 +39,7 @@ func _init(random: RandomNumberGenerator = null, data: Dictionary = {}) -> void:
 	var d := data if not data.is_empty() else Kitchen.load_json(CUSTOMERS_PATH)
 	customers = d.get("customers", [])
 	without_phrases = d.get("without_phrases", {})
+	recipe_phrases = d.get("recipe_phrases", {})
 
 
 func open_count() -> int:
@@ -37,7 +47,7 @@ func open_count() -> int:
 
 
 func has_vacancy() -> bool:
-	return open.size() < MAX_OPEN
+	return open.size() < max_open
 
 
 ## Segundos até o próximo bilhete (INF se a fila está cheia).
@@ -64,14 +74,57 @@ func spawn() -> TicketData:
 	var t := TicketData.new()
 	t.id = _next_id
 	_next_id += 1
-	t.recipe = recipe_id
-	t.without.assign(roll_without())
+	t.add_item(recipe_id, roll_without() if recipe_id == BURGER else [])
 	var c := _pick_customer()
 	t.nickname = c.get("nickname", "")
 	t.phrase = _pick_phrase(c, t.without)
 	t.state = TicketData.State.OPEN
 	open.append(t)
 	ticket_arrived.emit(t)
+	return t
+
+
+## M2: cria já um bilhete com estes itens (ids de receita, ex. ShiftClock.roll_order()).
+## Hambúrguer sorteia `without` como no M1. Retorna null se não há vaga.
+func spawn_order(recipes: Array, now_s: float = 0.0) -> TicketData:
+	if not has_vacancy() or recipes.is_empty():
+		return null
+	var t := TicketData.new()
+	t.id = _next_id
+	_next_id += 1
+	var first_without: Array[String] = []
+	for r: String in recipes:
+		var w: Array[String] = roll_without() if r == BURGER else ([] as Array[String])
+		if first_without.is_empty() and not w.is_empty():
+			first_without = w
+		t.add_item(r, w)
+	t.arrived_s = now_s
+	var c := _pick_customer()
+	t.nickname = c.get("nickname", "")
+	t.phrase = _pick_order_phrase(c, recipes, first_without)
+	t.state = TicketData.State.OPEN
+	open.append(t)
+	ticket_arrived.emit(t)
+	return t
+
+
+## Bilhete mais antigo que ainda espera esta receita (null se nenhum).
+func oldest_waiting(recipe: String) -> TicketData:
+	for t in open:
+		if t.waits_for(recipe):
+			return t
+	return null
+
+
+## Entrega um item (prato/tigela) ao bilhete mais antigo que espera a receita.
+## Se o bilhete fica completo, sai de `open` (SERVED). Retorna o bilhete, ou null se
+## ninguém espera (o chamador devolve à origem: "Ninguém pediu isso agora").
+func deliver(recipe: String, score: int, dominant: String = "", now_s: float = 0.0) -> TicketData:
+	var t := oldest_waiting(recipe)
+	if t == null:
+		return null
+	if t.deliver(t.pending_index(recipe), score, dominant, now_s):
+		open.erase(t)
 	return t
 
 
@@ -124,6 +177,18 @@ func _is_open_nickname(nick: String) -> bool:
 		if t.nickname == nick:
 			return true
 	return false
+
+
+func _pick_order_phrase(customer: Dictionary, recipes: Array, without: Array[String]) -> String:
+	var key := ""
+	if recipes.size() > 1:
+		key = "combo"
+	elif recipes[0] != BURGER:
+		key = recipes[0]
+	var pool: Array = recipe_phrases.get(key, []) if key != "" else []
+	if pool.is_empty():
+		return _pick_phrase(customer, without)
+	return pool[rng.randi_range(0, pool.size() - 1)]
 
 
 func _pick_phrase(customer: Dictionary, without: Array[String]) -> String:

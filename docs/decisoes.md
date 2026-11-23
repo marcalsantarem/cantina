@@ -22,3 +22,4 @@
 | 18 | Dica de ação | Decidido | O jogo mostra qual ação fazer com cada ingrediente/estação (ex.: "Pique em zigue-zague", "Puxe para virar", "Arraste ao prato"). | Definido pelo dono do projeto em 2026-11-19 |
 | 19 | Cozinha viva | Decidido | Estações cozinham sozinhas com o tempo e queimam se esquecidas; o jogador faz malabarismo entre elas (picar enquanto a carne doura). | Definido pelo dono do projeto em 2026-11-23 |
 | 20 | Variedade | Decidido | Mais receitas (ensopado, vegetariano, jantar…) e pedidos com mais de um item. Pedidos malucos, eventos e clientes recorrentes ficam de fora por ora. | Definido pelo dono do projeto em 2026-11-23 |
+| 21 | Detalhes do M2 | Decidido | Tempo só no relógio de parede (11h→14h) e em placas, sem número na HUD; 1 estrela libera o próximo dia (M3); a espera pesa só na agilidade e na frase, não na nota do prato; pedido de 2 itens é servido item a item na janela. | Recomendações do AG01 aceitas pelo dono em 2026-11-23 |

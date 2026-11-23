@@ -25,6 +25,8 @@ const ERR_ALIGN := "alignment"
 
 ## Modelo que volta pela janela, por faixa ("" = o prato como foi).
 const RETURN_MODEL: Array[String] = ["plate", "plate_dirty", ""]
+## Idem para tigela (ensopado, m2_turno §5).
+const RETURN_MODEL_BOWL: Array[String] = ["bowl", "bowl_dirty", ""]
 
 var recipe: Recipe
 
@@ -119,6 +121,11 @@ func score(without: Array, items: Array) -> Dictionary:
 
 static func return_model(band: int) -> String:
 	return RETURN_MODEL[band]
+
+
+## Modelo que volta para um item da receita (tigela no ensopado, prato no resto).
+static func return_model_for(recipe_id: String, band: int) -> String:
+	return RETURN_MODEL_BOWL[band] if recipe_id == StewPot.STEW else RETURN_MODEL[band]
 
 
 ## Média da nota `key` sobre as camadas pedidas que estão em `subset`; ausente = 0.

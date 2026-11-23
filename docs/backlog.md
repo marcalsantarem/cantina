@@ -16,3 +16,10 @@
 | T-012 | Prato montado sempre alinhado e centralizado (tam. P) | M1 | AG01 | feita |
 | T-013 | Dica de ação por ingrediente/estação: sinal na cozinha (AG01) e balão na UI (AG02) (tam. P) | M1 | AG01 + AG02 | feita |
 | T-014 | Design do M2 "Turno": estrutura do turno, curva de calmaria/rush, estrelas, cozinha viva e pedidos com 2 itens (tam. P) | M2 | AG01 | feita |
+| T-015 | Lógica pura do turno: `ShiftClock` (fases, chegadas, fim) e `ShiftScorer` (agilidade, humor, estrelas) + testes (tam. M) | M2 | AG01 | feita |
+| T-016 | Bilhete multi-item: `TicketData.itens`, entrega item a item, nota combinada + testes (tam. M) | M2 | AG01 | feita |
+| T-017 | `StewPot` (estados, grude, porções, raspar), gesto mexer, receita do ensopado e cortes de cenoura/batata/cebola + testes (tam. M) | M2 | AG01 | feita |
+| T-018 | Cena do M2: `stove_multi` com 2 frigideiras e panela, 3 caixotes novos, `Slot4`, relógio de parede, nós de efeito (tam. M) | M2 | AG08 | feita |
+| T-019 | Integração na cozinha: turno, 2 frigideiras, panela e mexer, servir item a item, sinais novos (tam. M) | M2 | AG01 | a fazer |
+| T-020 | HUD do M2: bilhete com 2 itens e humor, placas do turno, tela de fim de turno (tam. M) | M2 | AG02 | a fazer |
+| T-021 | Validação e balanceamento do M2 (3 turnos, desktop e mobile emulado) (tam. P) | M2 | AG03 | a fazer |

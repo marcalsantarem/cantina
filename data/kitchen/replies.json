@@ -40,6 +40,39 @@
 		"raw": [
 			"A carne ainda tava meio tímida, quase mugindo.",
 			"Mal passado é charme, mas esse quase voltou pro pasto."
+		],
+		"stew_burnt": [
+			"Tinha um crocante no fundo… era pra ter?",
+			"O ensopado veio com um toque defumado. Bem defumado."
+		],
+		"stew_raw": [
+			"A batata ainda tava pensando na vida.",
+			"A cenoura chegou crocante, parecia salada quente."
+		],
+		"stew_stir": [
+			"Uns pedaços grudaram no fundo, mas o caldo salvou.",
+			"Faltou uma mexidinha, o fundo ficou com saudade."
+		],
+		"late": [
+			"Demorou, mas valeu cada minuto.",
+			"Esperei um tiquinho, mas a barriga perdoou."
 		]
+	},
+	"recipe_bands": {
+		"food_stew": {
+			"great": [
+				"Esse ensopado abraçou minha alma.",
+				"Caldo de vó, chef. Quase chorei.",
+				"Raspei a tigela. Não conta pra ninguém."
+			],
+			"ok": [
+				"Ensopado honesto, esquentou o dia.",
+				"Gostoso! Só faltou um tiquinho de capricho."
+			],
+			"poor": [
+				"Foi uma sopa de experiências, chef.",
+				"Obrigado pela intenção. A intenção estava quentinha."
+			]
+		}
 	}
 }

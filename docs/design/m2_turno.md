@@ -59,7 +59,7 @@ Resposta: se `agilidade < 0,7`, a frase ganha gancho de demora, que substitui o 
 
 ## 4. Cozinha viva
 
-Fogão `stove_multi` (4 bocas) no lugar do `stove_single`: **2 frigideiras** (`Stove_Pan1`, `Stove_Pan2`, `pan_A`) + **1 panela** (`Stove_Pot`, `pot_A`). A 4ª boca fica livre para o M3. Tudo cozinha sozinho com o tempo, em paralelo; tirar da boca pausa (frigideira) ou não existe (panela é fixa).
+Fogão `stove_multi` (4 bocas) no lugar do `stove_single`: **2 frigideiras** (`Stove_Pan` (1ª), `Stove_Pan2`, `pan_A`) + **1 panela** (`Stove_Pot`, `pot_A`). A 4ª boca fica livre para o M3. Tudo cozinha sozinho com o tempo, em paralelo; tirar da boca pausa (frigideira) ou não existe (panela é fixa).
 
 ### 4.1 Frigideiras
 Mesma carne e mesma tabela do M1 §3, em cada frigideira de forma independente. Sinais de atenção, por frigideira: 7 s brilho + "tss" curto; 10 s fumaça cinza + aro laranja pulsando na boca; 13 s fumaça escura.
@@ -140,3 +140,12 @@ Esboço dos dias para o M3 (cada dia libera algo, decisão 9):
 | Cena: `stove_multi` com 2 frigideiras e panela, 3 caixotes novos, `Slot4`, relógio de parede, placas, efeitos (vapor, bolhas, aro de alerta) e sons | AG08 | M |
 | HUD: bilhete com 2 itens e humor de espera; tela de fim de turno | AG02 | M |
 | Balanceamento: jogar 3 turnos (celular e desktop), medir S e itens atendidos, propor ajuste de intervalos | AG03 | P |
+
+## Esclarecimentos da implementação (BRF-013)
+
+- **Nomes:** `TicketData.items[i]` = `{recipe, without, delivered, score, dominant}` (equivalem a `receita`, `sem`, `entregue`, `nota` do §5; identificadores em inglês, como o `recipe`/`without` do M1). `recipe`/`without` do bilhete espelham o 1º item.
+- **Intervalo (§1):** "a fase em que ela cai" = fase da chegada anterior (é o que gera 3, 25, 47, 63…). O máximo aberto é o da fase no momento da chegada; a vaga é vista no início de cada tick (inclui a troca de máximo aos 45 s e 135 s). Chegada atrasada que cairia em ≥ 165 s não acontece.
+- **Mexer (§4.2):** a 1ª volta de cada gesto vale `bom` (não há ritmo para medir); da 2ª em diante, CV sobre as voltas disponíveis (até 3). O histórico zera a cada toque. Volta fora de raio (média da volta) ou duração não conta e não tira grude. Inversão confirmada após 0,35 rad de recuo.
+- **Ensopado:** queimado antes de pronto vale `queimado` (0), não `desajeitado`. Mexer a panela queimada conta como raspar (não tira grude). Mais de 9 cortes: mesmo picado, nota `desajeitado`. Ganchos: `stew_burnt`, `stew_raw`, `stew_stir` (separados dos do hambúrguer) e `late` (demora). Frases de faixa próprias do ensopado em `recipe_bands`; combo usa as genéricas.
+- **Gancho de demora (§3):** com agilidade < 0,7 entra `late` se a nota do bilhete ≥ 80 ou se o pior item não tem erro; senão fica o gancho do pior item.
+- **Tela de fim:** "melhor frase" = resposta do bilhete completo de maior nota (desempate: maior agilidade). Tigela volta como `bowl`/`bowl_dirty` (`DishScorer.return_model_for`).

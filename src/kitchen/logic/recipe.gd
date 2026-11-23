@@ -3,6 +3,7 @@ extends RefCounted
 ## Receita lida de `data/recipes/<id>.json` (camadas de baixo para cima, apelidos, picar, caixotes).
 
 const BURGER_PATH := "res://data/recipes/food_burger.json"
+const RECIPE_PATH := "res://data/recipes/%s.json"
 
 var id: String = ""
 var icon: String = ""
@@ -35,6 +36,15 @@ static func from_dict(d: Dictionary) -> Recipe:
 
 static func load_burger() -> Recipe:
 	return from_dict(Kitchen.load_json(BURGER_PATH))
+
+
+## Carrega `data/recipes/<recipe_id>.json`.
+static func load_id(recipe_id: String) -> Recipe:
+	return from_dict(Kitchen.load_json(RECIPE_PATH % recipe_id))
+
+
+static func load_stew() -> Recipe:
+	return load_id("food_stew")
 
 
 ## Camada que o id ocupa na receita, ou "" se não é item de receita.

@@ -15,5 +15,9 @@
 		"food_ingredient_cheese_slice": ["Sem queijo, que eu tô de regime (de queijo).", "Esse sem queijo, por favor."],
 		"food_ingredient_lettuce_slice": ["Sem alface, que eu não sou coelho.", "Tira a alface, por favorzinho."],
 		"food_ingredient_tomato_slice": ["Sem tomate, por favor, é sério.", "Nada de tomate, combinado?"]
+	},
+	"recipe_phrases": {
+		"food_stew": ["Um ensopado quentinho, por favor.", "Me vê um ensopado, que o dia tá puxado.", "Ensopado de legumes, caprichado!"],
+		"combo": ["Hoje eu vim com fome em dobro, chef!", "Pra mim e pro meu amigo, por favor.", "Capricha nos dois, que é almoço de domingo."]
 	}
 }

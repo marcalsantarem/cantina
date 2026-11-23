@@ -1,11 +1,11 @@
-[gd_scene load_steps=38 format=3]
+[gd_scene load_steps=70 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/floor_kitchen.gltf" id="1_floor_kitchen"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/wall.gltf" id="2_wall"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/wall_orderwindow.gltf" id="3_wall_orderwindow"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/kitchencounter_straight_B.gltf" id="4_kitchencounter_straight_B"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/kitchencounter_straight_A.gltf" id="5_kitchencounter_straight_A"]
-[ext_resource type="PackedScene" path="res://assets/models/kaykit/stove_single.gltf" id="6_stove_single"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/stove_multi.gltf" id="6_stove_multi"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/extractorhood.gltf" id="7_extractorhood"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_buns.gltf" id="8_crate_buns"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_steak.gltf" id="9_crate_steak"]
@@ -18,6 +18,10 @@
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/plate.gltf" id="16_plate"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/towelrail.gltf" id="17_towelrail"]
 [ext_resource type="PackedScene" path="res://assets/models/kaykit/shelf_papertowel_decorated.gltf" id="18_shelf_papertowel_decorated"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/pot_A.gltf" id="19_pot_A"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_carrots.gltf" id="20_crate_carrots"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_potatoes.gltf" id="21_crate_potatoes"]
+[ext_resource type="PackedScene" path="res://assets/models/kaykit/crate_onions.gltf" id="22_crate_onions"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -47,30 +51,8 @@ size = Vector3(28, 5, 0.5)
 albedo_color = Color(0.62, 0.36, 0.24, 1)
 roughness = 0.9
 
-[sub_resource type="BoxMesh" id="BoxMesh_7"]
-material = SubResource("StandardMaterial3D_6")
-size = Vector3(2.6, 0.45, 1.1)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_8"]
-size = Vector3(1.2, 0.7, 1.2)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_9"]
-size = Vector3(1.2, 0.7, 1.2)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_10"]
-size = Vector3(1.2, 0.7, 1.2)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_11"]
-size = Vector3(1.2, 0.7, 1.2)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_12"]
-size = Vector3(1.2, 0.7, 1.2)
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_13"]
 size = Vector3(1.8, 0.8, 1.4)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_14"]
-size = Vector3(2, 0.8, 1.8)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_15"]
 size = Vector3(2.6, 0.8, 1.4)
@@ -78,17 +60,128 @@ size = Vector3(2.6, 0.8, 1.4)
 [sub_resource type="BoxShape3D" id="BoxShape3D_16"]
 size = Vector3(2.8, 1.8, 0.9)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_17"]
-size = Vector3(3.6, 0.7, 0.4)
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_18"]
 albedo_color = Color(0.62, 0.66, 0.68, 1)
 metallic = 0.4
 roughness = 0.5
 
-[sub_resource type="BoxMesh" id="BoxMesh_19"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_crate"]
+size = Vector3(1.1, 0.7, 1.1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pan"]
+size = Vector3(1, 0.8, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pot"]
+size = Vector3(1, 0.9, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rail"]
+size = Vector3(4, 0.7, 0.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rail"]
 material = SubResource("StandardMaterial3D_18")
-size = Vector3(3.6, 0.08, 0.08)
+size = Vector3(3.8, 0.08, 0.08)
+
+[sub_resource type="BoxMesh" id="BoxMesh_riser"]
+material = SubResource("StandardMaterial3D_6")
+size = Vector3(4.7, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_alert"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.55, 0.16, 0.9)
+
+[sub_resource type="TorusMesh" id="Torus_alert_pan"]
+material = SubResource("Mat_alert")
+inner_radius = 0.46
+outer_radius = 0.58
+rings = 32
+ring_segments = 6
+
+[sub_resource type="TorusMesh" id="Torus_alert_pot"]
+material = SubResource("Mat_alert")
+inner_radius = 0.44
+outer_radius = 0.56
+rings = 32
+ring_segments = 6
+
+[sub_resource type="StandardMaterial3D" id="Mat_particle"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+
+[sub_resource type="SphereMesh" id="Sphere_steam"]
+material = SubResource("Mat_particle")
+radius = 0.13
+height = 0.22
+radial_segments = 8
+rings = 4
+
+[sub_resource type="Gradient" id="Gradient_steam"]
+offsets = PackedFloat32Array(0, 0.25, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0.85, 1, 1, 1, 0)
+
+[sub_resource type="Curve" id="Curve_grow"]
+_data = [Vector2(0, 0.5), 0.0, 0.0, 0, 0, Vector2(1, 1.3), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="StandardMaterial3D" id="Mat_bubble"]
+albedo_color = Color(0.86, 0.55, 0.3, 1)
+roughness = 0.4
+
+[sub_resource type="SphereMesh" id="Sphere_bubble"]
+material = SubResource("Mat_bubble")
+radius = 0.05
+height = 0.1
+radial_segments = 8
+rings = 4
+
+[sub_resource type="Curve" id="Curve_pop"]
+_data = [Vector2(0, 0.3), 0.0, 0.0, 0, 0, Vector2(0.8, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="StandardMaterial3D" id="Mat_clock_face"]
+albedo_color = Color(0.97, 0.93, 0.86, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="Cyl_clock_face"]
+material = SubResource("Mat_clock_face")
+top_radius = 0.5
+bottom_radius = 0.5
+height = 0.06
+radial_segments = 32
+rings = 1
+
+[sub_resource type="CylinderMesh" id="Cyl_clock_rim"]
+material = SubResource("StandardMaterial3D_2")
+top_radius = 0.58
+bottom_radius = 0.58
+height = 0.05
+radial_segments = 32
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="Mat_clock_ink"]
+albedo_color = Color(0.23, 0.21, 0.19, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="Box_clock_tick"]
+material = SubResource("Mat_clock_ink")
+size = Vector3(0.05, 0.12, 0.02)
+
+[sub_resource type="BoxMesh" id="Box_hand_hour"]
+material = SubResource("Mat_clock_ink")
+size = Vector3(0.07, 0.28, 0.02)
+
+[sub_resource type="BoxMesh" id="Box_hand_minute"]
+material = SubResource("Mat_clock_ink")
+size = Vector3(0.045, 0.4, 0.02)
+
+[sub_resource type="CylinderMesh" id="Cyl_clock_cap"]
+material = SubResource("StandardMaterial3D_2")
+top_radius = 0.05
+bottom_radius = 0.05
+height = 0.08
+radial_segments = 12
+rings = 1
 
 [node name="Kitchen" type="Node3D"]
 
@@ -236,100 +329,193 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0, 0)
 [node name="Counter_10" parent="Set" instance=ExtResource("4_kitchencounter_straight_B")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 0)
 
-[node name="Stove" parent="Set" instance=ExtResource("6_stove_single")]
+[node name="Stove" parent="Set" instance=ExtResource("6_stove_multi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0)
 
 [node name="Hood" parent="Set" instance=ExtResource("7_extractorhood")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.8, -1)
+
+[node name="CrateRiser" type="MeshInstance3D" parent="Set"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.05, 1.225, -0.55)
+mesh = SubResource("BoxMesh_riser")
+
+[node name="WallClock" type="Node3D" parent="Set"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.6, 3.05, -0.97)
+
+[node name="Rim" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0.005)
+mesh = SubResource("Cyl_clock_rim")
+
+[node name="Face" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0.03)
+mesh = SubResource("Cyl_clock_face")
+
+[node name="Tick12" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 0.065)
+mesh = SubResource("Box_clock_tick")
+
+[node name="Tick3" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.38, 0, 0.065)
+mesh = SubResource("Box_clock_tick")
+
+[node name="Tick6" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.38, 0.065)
+mesh = SubResource("Box_clock_tick")
+
+[node name="Tick9" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.38, 0, 0.065)
+mesh = SubResource("Box_clock_tick")
+
+[node name="HandHour" type="Node3D" parent="Set/WallClock"]
+transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, 0, 0, 0.075)
+
+[node name="Mesh" type="MeshInstance3D" parent="Set/WallClock/HandHour"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11, 0)
+mesh = SubResource("Box_hand_hour")
+
+[node name="HandMinute" type="Node3D" parent="Set/WallClock"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.095)
+
+[node name="Mesh" type="MeshInstance3D" parent="Set/WallClock/HandMinute"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.16, 0)
+mesh = SubResource("Box_hand_minute")
+
+[node name="Cap" type="MeshInstance3D" parent="Set/WallClock"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0.1)
+mesh = SubResource("Cyl_clock_cap")
 
 [node name="Stations" type="Node3D" parent="."]
 
-[node name="CrateRiser" type="MeshInstance3D" parent="Set"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.75, 1.225, -0.5)
-mesh = SubResource("BoxMesh_7")
-
 [node name="Crate_bun" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.25, 1, 0.5)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_bun"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-shape = SubResource("BoxShape3D_8")
+shape = SubResource("BoxShape3D_crate")
 
 [node name="Snap" type="Marker3D" parent="Stations/Crate_bun"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 
 [node name="Model" parent="Stations/Crate_bun" instance=ExtResource("8_crate_buns")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 
 [node name="Crate_burger" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.75, 1, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.1, 1, 0.5)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_burger"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-shape = SubResource("BoxShape3D_9")
+shape = SubResource("BoxShape3D_crate")
 
 [node name="Snap" type="Marker3D" parent="Stations/Crate_burger"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 
 [node name="Model" parent="Stations/Crate_burger" instance=ExtResource("9_crate_steak")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 
 [node name="Crate_cheese" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.95, 1, 0.5)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_cheese"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-shape = SubResource("BoxShape3D_10")
+shape = SubResource("BoxShape3D_crate")
 
 [node name="Snap" type="Marker3D" parent="Stations/Crate_cheese"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 
 [node name="Model" parent="Stations/Crate_cheese" instance=ExtResource("10_crate_cheese")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
+
+[node name="Crate_onion" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, 1, 0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_onion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_onion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+
+[node name="Model" parent="Stations/Crate_onion" instance=ExtResource("22_crate_onions")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 
 [node name="Crate_lettuce" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.375, 1.45, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.8, 1.45, -0.5)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_lettuce"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-shape = SubResource("BoxShape3D_11")
+shape = SubResource("BoxShape3D_crate")
 
 [node name="Snap" type="Marker3D" parent="Stations/Crate_lettuce"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 
 [node name="Model" parent="Stations/Crate_lettuce" instance=ExtResource("11_crate_lettuce")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 
 [node name="Crate_tomato" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.125, 1.45, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.65, 1.45, -0.5)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_tomato"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-shape = SubResource("BoxShape3D_12")
+shape = SubResource("BoxShape3D_crate")
 
 [node name="Snap" type="Marker3D" parent="Stations/Crate_tomato"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 
 [node name="Model" parent="Stations/Crate_tomato" instance=ExtResource("12_crate_tomatoes")]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
+
+[node name="Crate_carrot" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.45, -0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_carrot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_carrot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+
+[node name="Model" parent="Stations/Crate_carrot" instance=ExtResource("20_crate_carrots")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
+
+[node name="Crate_potato" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.35, 1.45, -0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Crate_potato"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Snap" type="Marker3D" parent="Stations/Crate_potato"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+
+[node name="Model" parent="Stations/Crate_potato" instance=ExtResource("21_crate_potatoes")]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0, 0)
 
 [node name="CuttingBoard" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 1, 0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.25, 1, 0.25)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
@@ -348,20 +534,107 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.55, 0.15, 0.1)
 
 [node name="Stove_Pan" type="Area3D" parent="Stations"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.21, 0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.0, 1.21, 0.5)
 collision_layer = 2
 collision_mask = 0
 monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Stove_Pan"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.2)
-shape = SubResource("BoxShape3D_14")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.1)
+shape = SubResource("BoxShape3D_pan")
 
 [node name="Snap" type="Marker3D" parent="Stations/Stove_Pan"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
 
-[node name="Pan" parent="Stations/Stove_Pan" instance=ExtResource("15_pan_A")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="Model" parent="Stations/Stove_Pan" instance=ExtResource("15_pan_A")]
+transform = Transform3D(0.8157, 0, -0.3804, 0, 0.9, 0, 0.3804, 0, 0.8157, 0, 0, 0)
+
+[node name="Fx_Alert" type="MeshInstance3D" parent="Stations/Stove_Pan"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+visible = false
+cast_shadow = 0
+mesh = SubResource("Torus_alert_pan")
+
+[node name="Stove_Pan2" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0, 1.21, 0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Stove_Pan2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.1)
+shape = SubResource("BoxShape3D_pan")
+
+[node name="Snap" type="Marker3D" parent="Stations/Stove_Pan2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+
+[node name="Model" parent="Stations/Stove_Pan2" instance=ExtResource("15_pan_A")]
+transform = Transform3D(0.8157, 0, 0.3804, 0, 0.9, 0, -0.3804, 0, 0.8157, 0, 0, 0)
+
+[node name="Fx_Alert" type="MeshInstance3D" parent="Stations/Stove_Pan2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+visible = false
+cast_shadow = 0
+mesh = SubResource("Torus_alert_pan")
+
+[node name="Stove_Pot" type="Area3D" parent="Stations"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 1.21, -0.5)
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/Stove_Pot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_pot")
+
+[node name="Snap" type="Marker3D" parent="Stations/Stove_Pot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+
+[node name="Model" parent="Stations/Stove_Pot" instance=ExtResource("19_pot_A")]
+transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, 0, 0)
+
+[node name="Fx_Alert" type="MeshInstance3D" parent="Stations/Stove_Pot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+visible = false
+cast_shadow = 0
+mesh = SubResource("Torus_alert_pot")
+
+[node name="Fx_Steam" type="CPUParticles3D" parent="Stations/Stove_Pot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 0)
+visible = false
+cast_shadow = 0
+amount = 8
+lifetime = 1.4
+mesh = SubResource("Sphere_steam")
+emission_shape = 1
+emission_sphere_radius = 0.2
+direction = Vector3(0, 1, 0.7)
+spread = 12.0
+gravity = Vector3(0, 0.2, 0)
+initial_velocity_min = 0.35
+initial_velocity_max = 0.55
+scale_amount_min = 0.7
+scale_amount_max = 1.1
+scale_amount_curve = SubResource("Curve_grow")
+color_ramp = SubResource("Gradient_steam")
+
+[node name="Fx_Bubbles" type="CPUParticles3D" parent="Stations/Stove_Pot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+visible = false
+cast_shadow = 0
+amount = 6
+lifetime = 0.6
+mesh = SubResource("Sphere_bubble")
+emission_shape = 3
+emission_box_extents = Vector3(0.22, 0.01, 0.18)
+direction = Vector3(0, 1, 0)
+spread = 0.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.04
+initial_velocity_max = 0.1
+scale_amount_min = 0.7
+scale_amount_max = 1.3
+scale_amount_curve = SubResource("Curve_pop")
 
 [node name="Plate_Assembly" type="Area3D" parent="Stations"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 1, 0.3)
@@ -403,23 +676,26 @@ monitoring = false
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Stations/TicketRail"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-shape = SubResource("BoxShape3D_17")
+shape = SubResource("BoxShape3D_rail")
 
 [node name="Snap" type="Marker3D" parent="Stations/TicketRail"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Slot1" type="Marker3D" parent="Stations/TicketRail"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0, 0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0.1)
 
 [node name="Slot2" type="Marker3D" parent="Stations/TicketRail"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0, 0.1)
 
 [node name="Slot3" type="Marker3D" parent="Stations/TicketRail"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 0, 0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0.1)
+
+[node name="Slot4" type="Marker3D" parent="Stations/TicketRail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0.1)
 
 [node name="Bar" type="MeshInstance3D" parent="Stations/TicketRail"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
-mesh = SubResource("BoxMesh_19")
+mesh = SubResource("BoxMesh_rail")
 
 [node name="Decor" type="Node3D" parent="."]
 
